@@ -1,0 +1,43 @@
+@Pawmart_HostAddress = http://localhost:5164
+@accessToken = paste-jwt-here
+
+### Health
+GET {{Pawmart_HostAddress}}/health
+Accept: application/json
+
+### Public product search
+GET {{Pawmart_HostAddress}}/api/products?page=1&pageSize=20&sort=newest
+Accept: application/json
+
+### Categories
+GET {{Pawmart_HostAddress}}/api/categories
+Accept: application/json
+
+### Register a customer (replace the example values before sending)
+POST {{Pawmart_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "fullName": "Pawmart Customer",
+  "password": "Replace-With-A-Long-Unique-Password",
+  "phoneNumber": "0900000000"
+}
+
+### Log in
+POST {{Pawmart_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "Replace-With-A-Long-Unique-Password"
+}
+
+### AI recommendation (requires configured AI provider and the customer's pet ID)
+POST {{Pawmart_HostAddress}}/api/chat/recommendations
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "petId": 1
+}

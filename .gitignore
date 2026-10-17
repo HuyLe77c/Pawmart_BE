@@ -1,0 +1,13 @@
+# Visual Studio and .NET generated files
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# Machine-local configuration
+*.csproj.user
+
+# Keep Database/, wwwroot/uploads/, and appsettings files tracked as requested.
