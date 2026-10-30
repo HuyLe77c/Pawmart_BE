@@ -207,7 +207,8 @@ public sealed class PetService(PawmartDbContext db)
 {
     public async Task<IReadOnlyList<PetResponse>> ListAsync(string userId, CancellationToken ct) =>
         await db.Pets.AsNoTracking().Where(x => x.UserId == userId).OrderBy(x => x.PetId)
-            .Select(x => new PetResponse(x.PetId, x.PetName, x.PetType, x.Breed, x.AgeMonths, x.WeightKg, x.SpecialNotes, x.ImageUrl)).ToListAsync(ct);
+            .Select(x => new PetResponse(x.PetId, x.PetName, x.PetType, x.Breed, x.AgeMonths, x.WeightKg,
+                x.SpecialNotes, x.ImageUrl, x.BodySize, x.ActivityLevel, x.BodyConditionScore, x.FeedingHabits, x.FoodPreferences)).ToListAsync(ct);
 
     public async Task<PetResponse> CreateAsync(string userId, PetWriteRequest request, CancellationToken ct)
     {
@@ -239,6 +240,10 @@ public sealed class PetService(PawmartDbContext db)
     {
         pet.PetName = request.PetName.Trim(); pet.PetType = request.PetType.ToUpperInvariant(); pet.Breed = request.Breed;
         pet.AgeMonths = request.AgeMonths; pet.WeightKg = request.WeightKg; pet.SpecialNotes = request.SpecialNotes; pet.ImageUrl = request.ImageUrl;
+        pet.BodySize = request.BodySize; pet.ActivityLevel = request.ActivityLevel;
+        pet.BodyConditionScore = request.BodyConditionScore;
+        pet.FeedingHabits = request.FeedingHabits?.Trim(); pet.FoodPreferences = request.FoodPreferences?.Trim();
     }
-    private static PetResponse ToResponse(Pet p) => new(p.PetId, p.PetName, p.PetType, p.Breed, p.AgeMonths, p.WeightKg, p.SpecialNotes, p.ImageUrl);
+    private static PetResponse ToResponse(Pet p) => new(p.PetId, p.PetName, p.PetType, p.Breed, p.AgeMonths, p.WeightKg,
+        p.SpecialNotes, p.ImageUrl, p.BodySize, p.ActivityLevel, p.BodyConditionScore, p.FeedingHabits, p.FoodPreferences);
 }

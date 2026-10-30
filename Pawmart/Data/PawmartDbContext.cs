@@ -79,6 +79,10 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.PetType).HasMaxLength(20).IsUnicode(false).IsRequired();
         e.Property(x => x.Breed).HasMaxLength(100);
         e.Property(x => x.WeightKg).HasPrecision(5, 2);
+        e.Property(x => x.BodySize).HasMaxLength(10).IsUnicode(false);
+        e.Property(x => x.ActivityLevel).HasMaxLength(10).IsUnicode(false);
+        e.Property(x => x.FeedingHabits).HasMaxLength(500);
+        e.Property(x => x.FoodPreferences).HasMaxLength(500);
         e.Property(x => x.ImageUrl).HasMaxLength(1000);
         e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);

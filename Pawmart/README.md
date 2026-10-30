@@ -45,7 +45,37 @@ Log in again after promotion so the JWT contains the ADMIN role. Keep database w
 
 ## External providers
 
-Payment initiation/callback verification, distance quoting, Firebase push delivery, and AI recommendations are behind provider interfaces. The default implementations return an explicit unavailable response until a provider and its secrets are configured. Checkout still works with the configured flat shipping fee and COD. AI conversation history is not stored.
+Payment initiation/callback verification, distance quoting, and Firebase push delivery remain behind optional provider interfaces. Checkout works with the configured flat shipping fee and COD.
+
+## Chat AI with Omniroute
+
+PawMart's `POST /api/chat/messages` answers free-form questions and adds current, read-only catalog and customer-owned data when relevant. `POST /api/chat/recommendations` uses the same Omniroute connection for pet-specific advice. Both routes require a CUSTOMER bearer token. Chat history is kept in Flutter memory only; it is not saved in SQL Server.
+
+Chat message responses include a `products` array with product ID, current name, and price when the answer references verified catalog items. The app renders these as cards that open product detail. The pet-specific recommendation path uses its already-filtered product list; free-form answers only link active, stocked products present in the catalog context given to AI. Clients should treat this array as the source for navigation rather than extracting product IDs from answer text.
+
+The API uses `http://127.0.0.1:20128/v1` and model `cloudflare-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast` by default. Start the locally installed gateway with `omniroute serve --daemon --no-open` and ensure it is bound to loopback (`OMNIROUTE_SERVER_HOST=127.0.0.1`). A loopback-only gateway can be used without an API key if its local configuration permits this. For any remote Omniroute URL, set `Omniroute__BaseUrl`, `Omniroute__Model`, and `Omniroute__ApiKey` in the backend environment or secret store; the API rejects remote connections without a key. Never put the key in Flutter or commit it.
+
+This development machine's Omniroute key was saved in .NET User Secrets for the project. User Secrets are outside the repository and will not accompany a push or clone. On another machine, set `Omniroute__ApiKey` in the API process environment or run `dotnet user-secrets set 'Omniroute:ApiKey' '<your Omniroute key>' --project Pawmart.csproj` from this folder. Use a model available to that gateway; override `Omniroute__Model` when needed.
+
+For example, in PowerShell before starting the API:
+
+```powershell
+$env:Omniroute__BaseUrl = 'http://127.0.0.1:20128/v1'
+$env:Omniroute__Model = 'cloudflare-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+$env:OMNIROUTE_SERVER_HOST = '127.0.0.1'
+omniroute serve --daemon --no-open
+dotnet run --launch-profile http
+```
+
+When Omniroute or its selected model is unavailable, the API responds with a safe 503/502 and Flutter offers retry. General answers are model-generated and can be wrong; product, price, stock and account facts are provided from current PawMart database reads. The assistant cannot change orders, cart or profiles.
+
+Pet food advice is checked by the API before it is shown: it uses only active, stocked food/treat products for the pet type, removes clearly age-incompatible products, and excludes ingredients explicitly listed as allergens in the pet notes. A missing allergen in the stored ingredient list is **not** an allergy-safe certification; customers should check the package for cross-contact. For urgent symptoms and conditions requiring a veterinary diet, the API returns no product recommendation and directs the customer to a veterinarian. Chat AI applies the same safeguards to explicit health questions and, when there is exactly one pet profile, to food questions about that pet. These rules are conservative and cannot diagnose disease or replace veterinary care.
+
+For an existing `PetFoodDB`, apply `Database/2026-10-28_PetsNutritionProfile.sql` once before starting the updated API. It adds optional size, activity, 1–9 body condition score, feeding habits, and food preferences to `Pets`; it is safe to rerun. The baseline `Database/PetFoodDB_PRM393_Complete_SQLServer.sql` includes the same columns for a fresh database. Existing pet profiles remain valid with null values. The Flutter pet form can edit these fields, and the recommendation endpoint returns source URLs alongside its advice.
+
+Nutrition guidance was reviewed on 2026-10-28 against [WSAVA Global Nutrition Guidelines](https://wsava.org/Global-Guidelines/Global-Nutrition-Guidelines/), [FDA Complete and Balanced Pet Food](https://www.fda.gov/animal-veterinary/animal-health-literacy/complete-and-balanced-pet-food), and [Merck Veterinary Manual nutritional requirements](https://www.merckvetmanual.com/management-and-nutrition/nutrition-small-animals/nutritional-requirements-of-small-animals). This is a curated local reference, not live web search. The app does not compute grams/day without verified product energy density and veterinary context; breed, size, and taste preferences alone cannot establish medical suitability. Refresh the reviewed sources when changing the guidance.
+
+The recommendation service filters explicit allergens and disliked ingredients, then favors matching preferred ingredients when a main food exists. If Omniroute returns no usable product IDs or an invalid/unavailable response, the API labels a fallback list built from the same filtered catalog. It identifies treat-only results as treats rather than presenting them as a complete meal. Chat AI asks which pet to use when a food question is ambiguous across multiple profiles and answers exact product stock, price, and ingredients directly from the database.
 
 ## API groups
 

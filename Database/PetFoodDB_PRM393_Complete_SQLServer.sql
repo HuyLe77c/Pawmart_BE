@@ -135,6 +135,11 @@ CREATE TABLE dbo.Pets
     age_months      INT              NULL,
     weight_kg       DECIMAL(5,2)     NULL,
     special_notes   NVARCHAR(MAX)    NULL,
+    body_size       VARCHAR(10)      NULL,
+    activity_level  VARCHAR(10)      NULL,
+    body_condition_score INT         NULL,
+    feeding_habits  NVARCHAR(500)    NULL,
+    food_preferences NVARCHAR(500)   NULL,
     image_url       NVARCHAR(1000)   NULL,
     created_at      DATETIME2(0)     NOT NULL
         CONSTRAINT DF_Pets_CreatedAt DEFAULT (SYSUTCDATETIME()),
@@ -146,7 +151,10 @@ CREATE TABLE dbo.Pets
         ON DELETE CASCADE,
     CONSTRAINT CK_Pets_Type CHECK (pet_type IN ('DOG', 'CAT', 'OTHER')),
     CONSTRAINT CK_Pets_Age CHECK (age_months IS NULL OR age_months BETWEEN 0 AND 600),
-    CONSTRAINT CK_Pets_Weight CHECK (weight_kg IS NULL OR weight_kg > 0)
+    CONSTRAINT CK_Pets_Weight CHECK (weight_kg IS NULL OR weight_kg > 0),
+    CONSTRAINT CK_Pets_BodySize CHECK (body_size IS NULL OR body_size IN ('SMALL', 'MEDIUM', 'LARGE')),
+    CONSTRAINT CK_Pets_ActivityLevel CHECK (activity_level IS NULL OR activity_level IN ('LOW', 'MODERATE', 'HIGH')),
+    CONSTRAINT CK_Pets_BodyConditionScore CHECK (body_condition_score IS NULL OR body_condition_score BETWEEN 1 AND 9)
 );
 GO
 
@@ -881,7 +889,8 @@ GO
        Notifications
 
    AI:
-       Pets.pet_type / breed / age / weight / special_notes
+       Pets.pet_type / breed / age / weight / body_size / activity_level
+       / body_condition_score / feeding_habits / food_preferences / special_notes
        + Products.target_pet_type / description / ingredients / nutrition_info
        -> API sends context to Gemini/OpenAI
        -> AI returns recommendation

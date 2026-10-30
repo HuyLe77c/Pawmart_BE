@@ -26,6 +26,11 @@ public sealed class Pet
     public int? AgeMonths { get; set; }
     public decimal? WeightKg { get; set; }
     public string? SpecialNotes { get; set; }
+    public string? BodySize { get; set; }
+    public string? ActivityLevel { get; set; }
+    public int? BodyConditionScore { get; set; }
+    public string? FeedingHabits { get; set; }
+    public string? FoodPreferences { get; set; }
     public string? ImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

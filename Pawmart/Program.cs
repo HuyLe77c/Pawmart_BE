@@ -1,6 +1,9 @@
 using System.Security.Cryptography;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
@@ -60,10 +63,28 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<AdminReportService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<RecommendationService>();
+builder.Services.AddScoped<ChatMessageService>();
+builder.Services.AddHttpClient<OmnirouteClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddSingleton<IPaymentGateway, UnconfiguredPaymentGateway>();
 builder.Services.AddSingleton<IShippingCalculator, UnconfiguredShippingCalculator>();
 builder.Services.AddSingleton<IPushNotificationSender, UnconfiguredPushNotificationSender>();
-builder.Services.AddSingleton<IAiRecommendationService, UnconfiguredAiRecommendationService>();
+builder.Services.AddScoped<IAiRecommendationService, OmnirouteRecommendationService>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("customer-chat", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(new { title = "Too many requests", detail = "Bạn gửi tin nhắn quá nhanh. Vui lòng thử lại sau ít phút." }, ct);
+    };
+});
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -143,6 +164,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous().WithTags("Health");
 app.MapGet("/health/ready", async (PawmartDbContext db, CancellationToken ct) =>

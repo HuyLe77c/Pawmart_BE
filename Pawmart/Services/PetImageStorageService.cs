@@ -51,7 +51,8 @@ public sealed class PetImageStorageService(PawmartDbContext db, IWebHostEnvironm
 
         if (!string.IsNullOrWhiteSpace(previousImageUrl)) DeleteManagedFile(previousImageUrl);
         return new PetResponse(pet.PetId, pet.PetName, pet.PetType, pet.Breed, pet.AgeMonths,
-            pet.WeightKg, pet.SpecialNotes, pet.ImageUrl);
+            pet.WeightKg, pet.SpecialNotes, pet.ImageUrl, pet.BodySize, pet.ActivityLevel,
+            pet.BodyConditionScore, pet.FeedingHabits, pet.FoodPreferences);
     }
 
     private void DeleteManagedFile(string imageUrl)

@@ -71,7 +71,14 @@ public sealed class PetWriteRequest
     [Range(0, 600)] public int? AgeMonths { get; init; }
     [Range(typeof(decimal), "0.01", "999.99")] public decimal? WeightKg { get; init; }
     [StringLength(2000)] public string? SpecialNotes { get; init; }
+    [RegularExpression("^(SMALL|MEDIUM|LARGE)$")] public string? BodySize { get; init; }
+    [RegularExpression("^(LOW|MODERATE|HIGH)$")] public string? ActivityLevel { get; init; }
+    [Range(1, 9)] public int? BodyConditionScore { get; init; }
+    [StringLength(500)] public string? FeedingHabits { get; init; }
+    [StringLength(500)] public string? FoodPreferences { get; init; }
     [StringLength(1000), Url] public string? ImageUrl { get; init; }
 }
 
-public sealed record PetResponse(int PetId, string PetName, string PetType, string? Breed, int? AgeMonths, decimal? WeightKg, string? SpecialNotes, string? ImageUrl);
+public sealed record PetResponse(int PetId, string PetName, string PetType, string? Breed, int? AgeMonths, decimal? WeightKg,
+    string? SpecialNotes, string? ImageUrl, string? BodySize, string? ActivityLevel, int? BodyConditionScore,
+    string? FeedingHabits, string? FoodPreferences);
