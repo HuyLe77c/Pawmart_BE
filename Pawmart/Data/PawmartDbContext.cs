@@ -112,6 +112,8 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.Sku).HasMaxLength(50).IsUnicode(false);
         e.Property(x => x.ProductName).HasMaxLength(150).IsRequired();
         e.Property(x => x.Brand).HasMaxLength(100);
+        e.Property(x => x.PackageSize).HasMaxLength(100);
+        e.Property(x => x.LifeStage).HasMaxLength(100);
         e.Property(x => x.Price).HasPrecision(18, 2);
         e.Property(x => x.StockQuantity).HasDefaultValue(0);
         e.Property(x => x.LowStockThreshold).HasDefaultValue(5);

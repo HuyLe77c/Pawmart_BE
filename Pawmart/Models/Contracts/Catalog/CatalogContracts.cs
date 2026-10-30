@@ -11,6 +11,9 @@ public sealed class ProductWriteRequest
     public string? Description { get; init; }
     public string? Ingredients { get; init; }
     public string? NutritionInfo { get; init; }
+    [StringLength(100)] public string? PackageSize { get; init; }
+    [StringLength(100)] public string? LifeStage { get; init; }
+    public string? FeedingGuide { get; init; }
     [Range(typeof(decimal), "0", "9999999999999999")] public decimal Price { get; init; }
     [Range(0, int.MaxValue)] public int StockQuantity { get; init; }
     [Range(0, int.MaxValue)] public int LowStockThreshold { get; init; } = 5;
@@ -29,7 +32,8 @@ public sealed class ProductImageWriteRequest
 public sealed record ProductResponse(
     int ProductId, int CategoryId, string? Sku, string ProductName, string? Brand, string? Description,
     string? Ingredients, string? NutritionInfo, decimal Price, int StockQuantity, int LowStockThreshold,
-    string TargetPetType, bool IsFeatured, bool IsActive, IReadOnlyList<ProductImageResponse> Images);
+    string TargetPetType, bool IsFeatured, bool IsActive, IReadOnlyList<ProductImageResponse> Images,
+    string? PackageSize, string? LifeStage, string? FeedingGuide);
 
 public sealed record ProductImageResponse(int ImageId, string ImageUrl, bool IsPrimary, int DisplayOrder);
 

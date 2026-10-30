@@ -124,7 +124,8 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
         return products.Select(p => new ProductResponse(
             p.ProductId, p.CategoryId, p.Sku, p.ProductName, p.Brand, p.Description, p.Ingredients, p.NutritionInfo,
             p.Price, p.StockQuantity, p.LowStockThreshold, p.TargetPetType, p.IsFeatured, p.IsActive,
-            images.Where(i => i.ProductId == p.ProductId).Select(i => new ProductImageResponse(i.ImageId, i.ImageUrl, i.IsPrimary, i.DisplayOrder)).ToArray())).ToArray();
+            images.Where(i => i.ProductId == p.ProductId).Select(i => new ProductImageResponse(i.ImageId, i.ImageUrl, i.IsPrimary, i.DisplayOrder)).ToArray(),
+            p.PackageSize, p.LifeStage, p.FeedingGuide)).ToArray();
     }
 
     private async Task ReplaceImages(int productId, IReadOnlyCollection<ProductImageWriteRequest> requested, CancellationToken ct)
@@ -156,6 +157,9 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
         product.Description = request.Description;
         product.Ingredients = request.Ingredients;
         product.NutritionInfo = request.NutritionInfo;
+        product.PackageSize = string.IsNullOrWhiteSpace(request.PackageSize) ? null : request.PackageSize.Trim();
+        product.LifeStage = string.IsNullOrWhiteSpace(request.LifeStage) ? null : request.LifeStage.Trim();
+        product.FeedingGuide = string.IsNullOrWhiteSpace(request.FeedingGuide) ? null : request.FeedingGuide.Trim();
         product.Price = request.Price;
         product.StockQuantity = request.StockQuantity;
         product.LowStockThreshold = request.LowStockThreshold;

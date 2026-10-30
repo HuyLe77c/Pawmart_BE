@@ -194,6 +194,9 @@ CREATE TABLE dbo.Products
     description              NVARCHAR(MAX)    NULL,
     ingredients              NVARCHAR(MAX)    NULL,
     nutrition_info           NVARCHAR(MAX)    NULL,
+    package_size             NVARCHAR(100)    NULL,
+    life_stage               NVARCHAR(100)    NULL,
+    feeding_guide            NVARCHAR(MAX)    NULL,
     price                    DECIMAL(18,2)    NOT NULL,
     stock_quantity            INT              NOT NULL
         CONSTRAINT DF_Products_StockQuantity DEFAULT (0),

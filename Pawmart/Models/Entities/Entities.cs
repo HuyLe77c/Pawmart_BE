@@ -58,6 +58,9 @@ public sealed class Product
     public string? Description { get; set; }
     public string? Ingredients { get; set; }
     public string? NutritionInfo { get; set; }
+    public string? PackageSize { get; set; }
+    public string? LifeStage { get; set; }
+    public string? FeedingGuide { get; set; }
     public decimal Price { get; set; }
     public int StockQuantity { get; set; }
     public int LowStockThreshold { get; set; } = 5;

@@ -38,5 +38,11 @@ public sealed class CartController(CartService cart, CheckoutService checkout) :
         return StatusCode(StatusCodes.Status201Created, order);
     }
 
+    [HttpPost("checkout/quote")]
+    [ProducesResponseType<CheckoutQuote>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public Task<CheckoutQuote> Quote(CheckoutQuoteRequest request, CancellationToken ct) =>
+        checkout.GetQuoteAsync(CurrentUserId, request.PromotionCode, ct);
+
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 }
