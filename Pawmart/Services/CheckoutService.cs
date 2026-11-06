@@ -10,7 +10,7 @@ using Pawmart.Models.Entities;
 
 namespace Pawmart.Services;
 
-public sealed class CheckoutService(PawmartDbContext db, IConfiguration configuration)
+public sealed class CheckoutService(PawmartDbContext db, IConfiguration configuration, BankQrService bankQr)
 {
     public async Task<CheckoutQuote> GetQuoteAsync(string userId, string? promotionCode, CancellationToken ct)
     {
@@ -82,7 +82,7 @@ public sealed class CheckoutService(PawmartDbContext db, IConfiguration configur
             Quantity = item.Quantity,
             UnitPrice = products[item.ProductId].Price
         }));
-        db.Payments.Add(new Payment
+        var payment = new Payment
         {
             PaymentId = Guid.NewGuid().ToString("N"),
             OrderId = orderId,
@@ -90,7 +90,9 @@ public sealed class CheckoutService(PawmartDbContext db, IConfiguration configur
             PaymentStatus = "PENDING",
             Amount = grandTotal,
             CreatedAt = DateTime.UtcNow
-        });
+        };
+        if (order.PaymentMethod == "BANK_QR") bankQr.PreparePayment(order, payment);
+        db.Payments.Add(payment);
         db.CartItems.RemoveRange(cart);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);

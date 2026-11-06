@@ -14,6 +14,19 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
     public Task<PagedResponse<ProductResponse>> ListForAdminAsync(ProductQuery query, CancellationToken ct)
         => SearchCoreAsync(query, includeInactive: true, ct);
 
+    public async Task<CatalogReviewResponse> GetCatalogReviewAsync(int productId, CancellationToken ct)
+    {
+        var review = await db.ProductCatalogReviews.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.ProductId == productId, ct)
+            ?? throw new ApiException(StatusCodes.Status404NotFound, "Catalog review was not found.", "Not found");
+        return new CatalogReviewResponse(review.ProductId, review.Slug, review.SubcategoryId,
+            review.ModelName, review.OfficialUrl, review.ModelStatus, review.ImageStatus,
+            review.PriceStatus, review.ProductStatus, review.ImageSourceUrl, review.PriceSourceUrl,
+            review.PriceCheckedAt, review.ShortDescription, review.Benefits,
+            review.UsageInstructions, review.Warnings, review.StorageInstructions,
+            review.ReviewNote, review.PublicPreview);
+    }
+
     public async Task<AdminProductSummary> GetAdminSummaryAsync(CancellationToken ct)
     {
         var categories = await db.Products.AsNoTracking()
@@ -36,7 +49,9 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
     private async Task<PagedResponse<ProductResponse>> SearchCoreAsync(ProductQuery query, bool includeInactive, CancellationToken ct)
     {
         var products = db.Products.AsNoTracking();
-        if (!includeInactive) products = products.Where(x => x.IsActive);
+        if (!includeInactive) products = products.Where(x => x.IsListed &&
+            (x.IsActive || db.ProductCatalogReviews.Any(review =>
+                review.ProductId == x.ProductId && review.PublicPreview)));
         if (includeInactive && query.Active.HasValue) products = products.Where(x => x.IsActive == query.Active.Value);
         if (query.CategoryId.HasValue) products = products.Where(x => x.CategoryId == query.CategoryId);
         if (!string.IsNullOrWhiteSpace(query.PetType)) products = products.Where(x => x.TargetPetType == "ALL" || x.TargetPetType == query.PetType);
@@ -49,8 +64,11 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
 
         products = query.Sort switch
         {
-            "price_asc" => products.OrderBy(x => x.Price).ThenBy(x => x.ProductId),
-            "price_desc" => products.OrderByDescending(x => x.Price).ThenBy(x => x.ProductId),
+            "recommended" => products.OrderBy(x => x.Sku != null && x.Sku.StartsWith("CAT41-")
+                    ? x.Sku.Substring(7) : "99")
+                .ThenBy(x => x.Sku),
+            "price_asc" => products.OrderBy(x => x.Price <= 0).ThenBy(x => x.Price).ThenBy(x => x.ProductId),
+            "price_desc" => products.OrderBy(x => x.Price <= 0).ThenByDescending(x => x.Price).ThenBy(x => x.ProductId),
             "name" => products.OrderBy(x => x.ProductName),
             _ => products.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.ProductId)
         };
@@ -64,7 +82,9 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
 
     public async Task<ProductResponse> GetByIdAsync(int id, CancellationToken ct)
     {
-        var product = await db.Products.AsNoTracking().SingleOrDefaultAsync(x => x.ProductId == id && x.IsActive, ct)
+        var product = await db.Products.AsNoTracking().SingleOrDefaultAsync(x => x.ProductId == id &&
+            (x.IsActive || (x.IsListed && db.ProductCatalogReviews.Any(review =>
+                review.ProductId == x.ProductId && review.PublicPreview))), ct)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Product was not found.", "Not found");
         return (await MapProducts([product], ct)).Single();
     }
@@ -85,9 +105,10 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
     public async Task<ProductResponse> UpdateAsync(int id, ProductWriteRequest request, CancellationToken ct)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        await EnsureCategoryExists(request.CategoryId, ct);
         var product = await db.Products.SingleOrDefaultAsync(x => x.ProductId == id, ct)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Product was not found.", "Not found");
+        if (request.CategoryId != product.CategoryId)
+            await EnsureCategoryExists(request.CategoryId, ct);
         var previousImageUrls = await db.ProductImages.Where(x => x.ProductId == id).Select(x => x.ImageUrl).ToListAsync(ct);
         Apply(product, request);
         product.UpdatedAt = DateTime.UtcNow;
@@ -104,6 +125,23 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
     {
         var product = await db.Products.SingleOrDefaultAsync(x => x.ProductId == id, ct)
             ?? throw new ApiException(StatusCodes.Status404NotFound, "Product was not found.", "Not found");
+        if (active && product.Sku?.StartsWith("CAT41-", StringComparison.Ordinal) == true)
+        {
+            var review = await db.ProductCatalogReviews.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.ProductId == id, ct);
+            var hasImage = await db.ProductImages.AsNoTracking().AnyAsync(x => x.ProductId == id, ct);
+            var externallyVerified = review is not null && review.ModelStatus == "VERIFIED"
+                && review.PriceStatus == "VERIFIED" && review.ProductStatus == "VERIFIED"
+                && !string.IsNullOrWhiteSpace(review.PriceSourceUrl) && review.PriceCheckedAt is not null;
+            var ownerApproved = review is not null && review.PriceStatus == "OWNER_SET"
+                && review.ProductStatus == "OWNER_APPROVED";
+            if (review is null || review.ImageStatus != "VERIFIED"
+                || string.IsNullOrWhiteSpace(review.ImageSourceUrl) || !hasImage
+                || !(externallyVerified || ownerApproved)
+                || product.Price <= 0 || product.StockQuantity <= 0)
+                throw new ApiException(StatusCodes.Status400BadRequest,
+                    "Product requires a reviewed image, approved sale price, and positive stock before activation.", "Catalog review required");
+        }
         product.IsActive = active;
         product.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
@@ -121,11 +159,23 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
         var images = await db.ProductImages.AsNoTracking().Where(x => ids.Contains(x.ProductId))
             .OrderByDescending(x => x.IsPrimary).ThenBy(x => x.DisplayOrder)
             .ToListAsync(ct);
+        var reviewedIds = products.Where(x => x.Sku?.StartsWith("CAT41-", StringComparison.Ordinal) == true)
+            .Select(x => x.ProductId).ToArray();
+        List<ProductCatalogReview> reviews = reviewedIds.Length == 0
+            ? []
+            : await db.ProductCatalogReviews.AsNoTracking()
+                .Where(x => reviewedIds.Contains(x.ProductId)).ToListAsync(ct);
+        var reviewByProduct = reviews.ToDictionary(x => x.ProductId);
         return products.Select(p => new ProductResponse(
             p.ProductId, p.CategoryId, p.Sku, p.ProductName, p.Brand, p.Description, p.Ingredients, p.NutritionInfo,
             p.Price, p.StockQuantity, p.LowStockThreshold, p.TargetPetType, p.IsFeatured, p.IsActive,
             images.Where(i => i.ProductId == p.ProductId).Select(i => new ProductImageResponse(i.ImageId, i.ImageUrl, i.IsPrimary, i.DisplayOrder)).ToArray(),
-            p.PackageSize, p.LifeStage, p.FeedingGuide)).ToArray();
+            p.PackageSize, p.LifeStage, p.FeedingGuide,
+            reviewByProduct.TryGetValue(p.ProductId, out var review)
+                ? new CatalogReviewSummary(review.ModelStatus, review.ImageStatus,
+                    review.PriceStatus, review.ProductStatus, review.PublicPreview,
+                    review.OfficialUrl, review.ShortDescription)
+                : null)).ToArray();
     }
 
     private async Task ReplaceImages(int productId, IReadOnlyCollection<ProductImageWriteRequest> requested, CancellationToken ct)
@@ -172,7 +222,11 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
 public sealed class CategoryService(PawmartDbContext db)
 {
     public async Task<IReadOnlyList<CategoryResponse>> ListAsync(CancellationToken ct) =>
-        await db.Categories.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.SortOrder).ThenBy(x => x.CategoryName)
+        await db.Categories.AsNoTracking()
+            .Where(x => x.IsActive && db.Products.Any(product => product.CategoryId == x.CategoryId &&
+                product.IsListed && (product.IsActive || db.ProductCatalogReviews.Any(review =>
+                    review.ProductId == product.ProductId && review.PublicPreview))))
+            .OrderBy(x => x.SortOrder).ThenBy(x => x.CategoryName)
             .Select(x => new CategoryResponse(x.CategoryId, x.CategoryName, x.ImageUrl, x.Description, x.SortOrder, x.IsActive)).ToListAsync(ct);
 
     public async Task<IReadOnlyList<CategoryResponse>> ListForAdminAsync(CancellationToken ct) =>

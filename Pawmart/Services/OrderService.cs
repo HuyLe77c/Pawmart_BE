@@ -102,20 +102,7 @@ public sealed class OrderService(PawmartDbContext db)
         }
         else if (targetStatus == "CONFIRMED") order.ConfirmedAt = now;
         else if (targetStatus == "SHIPPING") order.ShippedAt = now;
-        else if (targetStatus == "DELIVERED")
-        {
-            order.DeliveredAt = now;
-            if (order.PaymentMethod == "COD")
-            {
-                var payment = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId, ct);
-                if (payment is not null)
-                {
-                    payment.PaymentStatus = "SUCCESS";
-                    payment.PaidAt = now;
-                    payment.UpdatedAt = now;
-                }
-            }
-        }
+        else if (targetStatus == "DELIVERED") order.DeliveredAt = now;
         order.OrderStatus = targetStatus;
         order.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
@@ -147,11 +134,13 @@ public sealed class OrderService(PawmartDbContext db)
                            orderby line.OrderItemId
                            select new OrderLineResponse(line.ProductId, product.ProductName, line.Quantity, line.UnitPrice, line.LineTotal)).ToListAsync(ct);
         var paymentStatus = await db.Payments.AsNoTracking().Where(x => x.OrderId == order.OrderId).Select(x => x.PaymentStatus).SingleOrDefaultAsync(ct) ?? "PENDING";
+        var review = await db.OrderReviews.AsNoTracking().SingleOrDefaultAsync(x => x.OrderId == order.OrderId, ct);
         var history = await db.OrderStatusHistory.AsNoTracking().Where(x => x.OrderId == order.OrderId).OrderBy(x => x.CreatedAt)
             .Select(x => new OrderStatusHistoryResponse(x.Status, x.Note, x.CreatedAt)).ToListAsync(ct);
         return new OrderDetailResponse(order.OrderId, order.SubtotalAmount, order.DiscountAmount, order.ShippingFee, order.GrandTotal,
             order.ShippingAddress, order.RecipientName, order.RecipientPhone, order.Latitude, order.Longitude, order.PaymentMethod,
-            paymentStatus, order.OrderStatus, order.Note, order.CreatedAt, items, history);
+            paymentStatus, order.OrderStatus, order.Note, order.CreatedAt, items, history,
+            review is null ? null : OrderReviewService.Map(review));
     }
 
     private async Task<PagedResponse<OrderListItemResponse>> PageAsync(IQueryable<Order> query, int requestedPage, int requestedSize, CancellationToken ct)
@@ -163,7 +152,10 @@ public sealed class OrderService(PawmartDbContext db)
             .Select(x => new { x.OrderId, x.GrandTotal, x.PaymentMethod, x.OrderStatus, x.CreatedAt }).ToListAsync(ct);
         var ids = rows.Select(x => x.OrderId).ToArray();
         var paymentStatuses = await db.Payments.AsNoTracking().Where(x => ids.Contains(x.OrderId)).ToDictionaryAsync(x => x.OrderId, x => x.PaymentStatus, ct);
-        var values = rows.Select(x => new OrderListItemResponse(x.OrderId, x.GrandTotal, x.PaymentMethod, paymentStatuses.GetValueOrDefault(x.OrderId, "PENDING"), x.OrderStatus, x.CreatedAt)).ToArray();
+        var reviewRatings = await db.OrderReviews.AsNoTracking().Where(x => ids.Contains(x.OrderId))
+            .ToDictionaryAsync(x => x.OrderId, x => x.Rating, ct);
+        var values = rows.Select(x => new OrderListItemResponse(x.OrderId, x.GrandTotal, x.PaymentMethod, paymentStatuses.GetValueOrDefault(x.OrderId, "PENDING"), x.OrderStatus, x.CreatedAt,
+            reviewRatings.TryGetValue(x.OrderId, out var rating) ? rating : null)).ToArray();
         return new PagedResponse<OrderListItemResponse>(values, page, size, total);
     }
 }

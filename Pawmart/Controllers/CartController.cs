@@ -11,8 +11,10 @@ namespace Pawmart.Controllers;
 [ApiController]
 [Authorize(Policy = AuthorizationPolicies.Customer)]
 [Route("api/cart")]
-public sealed class CartController(CartService cart, CheckoutService checkout) : ControllerBase
+public sealed class CartController(CartService cart, CheckoutService checkout, BankQrService bankQr) : ControllerBase
 {
+    [HttpGet("checkout/payment-methods")]
+    public PaymentMethodsResponse PaymentMethods() => bankQr.GetMethods();
     [HttpGet]
     public Task<CartResponse> Get(CancellationToken ct) => cart.GetAsync(CurrentUserId, ct);
 

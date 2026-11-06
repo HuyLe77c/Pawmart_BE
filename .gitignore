@@ -11,3 +11,6 @@
 *.csproj.user
 
 # Keep Database/, wwwroot/uploads/, and appsettings files tracked as requested.
+# Generated photo review copies are reproducible; product photos live in wwwroot/uploads/products.
+Database/catalog-41-image-review/
+__pycache__/

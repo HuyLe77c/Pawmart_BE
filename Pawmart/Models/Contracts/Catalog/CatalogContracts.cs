@@ -33,9 +33,21 @@ public sealed record ProductResponse(
     int ProductId, int CategoryId, string? Sku, string ProductName, string? Brand, string? Description,
     string? Ingredients, string? NutritionInfo, decimal Price, int StockQuantity, int LowStockThreshold,
     string TargetPetType, bool IsFeatured, bool IsActive, IReadOnlyList<ProductImageResponse> Images,
-    string? PackageSize, string? LifeStage, string? FeedingGuide);
+    string? PackageSize, string? LifeStage, string? FeedingGuide,
+    CatalogReviewSummary? CatalogReview = null);
+
+public sealed record CatalogReviewSummary(string ModelStatus, string ImageStatus,
+    string PriceStatus, string ProductStatus, bool PublicPreview,
+    string OfficialUrl, string? ShortDescription);
 
 public sealed record ProductImageResponse(int ImageId, string ImageUrl, bool IsPrimary, int DisplayOrder);
+
+public sealed record CatalogReviewResponse(
+    int ProductId, string Slug, int SubcategoryId, string ModelName, string OfficialUrl,
+    string ModelStatus, string ImageStatus, string PriceStatus, string ProductStatus,
+    string? ImageSourceUrl, string? PriceSourceUrl, DateTime? PriceCheckedAt,
+    string? ShortDescription, string? Benefits, string? UsageInstructions,
+    string? Warnings, string? StorageInstructions, string? ReviewNote, bool PublicPreview);
 
 public sealed class ProductQuery
 {
@@ -46,7 +58,7 @@ public sealed class ProductQuery
     [StringLength(100)] public string? Brand { get; init; }
     [Range(1, 1000)] public int Page { get; init; } = 1;
     [Range(1, 100)] public int PageSize { get; init; } = 20;
-    [RegularExpression("^(price_asc|price_desc|name|newest)$")] public string Sort { get; init; } = "newest";
+    [RegularExpression("^(recommended|price_asc|price_desc|name|newest)$")] public string Sort { get; init; } = "newest";
 }
 
 public sealed record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalItems);

@@ -67,6 +67,7 @@ public sealed class Product
     public string TargetPetType { get; set; } = "ALL";
     public bool IsFeatured { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsListed { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
@@ -79,6 +80,30 @@ public sealed class ProductImage
     public bool IsPrimary { get; set; }
     public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public sealed class ProductCatalogReview
+{
+    public int ProductId { get; set; }
+    public string Slug { get; set; } = "";
+    public int SubcategoryId { get; set; }
+    public string ModelName { get; set; } = "";
+    public string? ShortDescription { get; set; }
+    public string? Benefits { get; set; }
+    public string? UsageInstructions { get; set; }
+    public string? Warnings { get; set; }
+    public string? StorageInstructions { get; set; }
+    public string OfficialUrl { get; set; } = "";
+    public string ModelStatus { get; set; } = "NEEDS_REVIEW";
+    public string? ImageSourceUrl { get; set; }
+    public string ImageStatus { get; set; } = "NEEDS_REVIEW";
+    public string? PriceSourceUrl { get; set; }
+    public DateTime? PriceCheckedAt { get; set; }
+    public string PriceStatus { get; set; } = "NEEDS_REVIEW";
+    public string ProductStatus { get; set; } = "NEEDS_REVIEW";
+    public bool PublicPreview { get; set; }
+    public string? ReviewNote { get; set; }
+    public DateTime? ReviewedAt { get; set; }
 }
 
 public sealed class CartItem
@@ -180,6 +205,21 @@ public sealed class OrderStatusHistory
     public DateTime CreatedAt { get; set; }
 }
 
+public sealed class OrderReview
+{
+    public int ReviewId { get; set; }
+    public string OrderId { get; set; } = "";
+    public string UserId { get; set; } = "";
+    public int Rating { get; set; }
+    public string AuthorName { get; set; } = "";
+    public string? Comment { get; set; }
+    public bool SharePublicly { get; set; }
+    public bool IsVisible { get; set; } = true;
+    public string? ShopReply { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? RepliedAt { get; set; }
+}
+
 public sealed class Payment
 {
     public string PaymentId { get; set; } = "";
@@ -190,6 +230,10 @@ public sealed class Payment
     public string? TransactionCode { get; set; }
     public string? ProviderTransactionId { get; set; }
     public string? GatewayResponse { get; set; }
+    public string? BankBin { get; set; }
+    public string? BankName { get; set; }
+    public string? BankAccountNo { get; set; }
+    public string? BankAccountName { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

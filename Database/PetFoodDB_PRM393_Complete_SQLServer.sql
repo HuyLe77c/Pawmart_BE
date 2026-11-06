@@ -208,6 +208,8 @@ CREATE TABLE dbo.Products
         CONSTRAINT DF_Products_IsFeatured DEFAULT (0),
     is_active                 BIT              NOT NULL
         CONSTRAINT DF_Products_IsActive DEFAULT (1),
+    is_listed                 BIT              NOT NULL
+        CONSTRAINT DF_Products_IsListed DEFAULT (1),
     created_at                DATETIME2(0)     NOT NULL
         CONSTRAINT DF_Products_CreatedAt DEFAULT (SYSUTCDATETIME()),
     updated_at                DATETIME2(0)     NULL,
@@ -260,6 +262,75 @@ GO
 
 CREATE UNIQUE INDEX UX_ProductImages_ProductDisplayOrder
 ON dbo.Product_Images(product_id, display_order);
+GO
+
+IF OBJECT_ID(N'dbo.Catalog_Subcategories', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Catalog_Subcategories
+    (
+        subcategory_id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Catalog_Subcategories PRIMARY KEY,
+        category_id INT NOT NULL,
+        subcategory_name NVARCHAR(100) NOT NULL,
+        CONSTRAINT FK_Catalog_Subcategories_Categories FOREIGN KEY (category_id) REFERENCES dbo.Categories(category_id),
+        CONSTRAINT UQ_Catalog_Subcategories_Category_Name UNIQUE (category_id, subcategory_name)
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Catalog_Product_Reviews', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Catalog_Product_Reviews
+    (
+        product_id INT NOT NULL CONSTRAINT PK_Catalog_Product_Reviews PRIMARY KEY,
+        slug VARCHAR(180) NOT NULL,
+        subcategory_id INT NOT NULL,
+        model_name NVARCHAR(150) NOT NULL,
+        short_description NVARCHAR(500) NULL,
+        benefits NVARCHAR(MAX) NULL,
+        usage_instructions NVARCHAR(MAX) NULL,
+        warnings NVARCHAR(MAX) NULL,
+        storage_instructions NVARCHAR(MAX) NULL,
+        official_url NVARCHAR(1000) NOT NULL,
+        model_status VARCHAR(20) NOT NULL,
+        image_source_url NVARCHAR(1000) NULL,
+        image_status VARCHAR(20) NOT NULL CONSTRAINT DF_Catalog_Product_Reviews_ImageStatus DEFAULT ('NEEDS_REVIEW'),
+        price_source_url NVARCHAR(1000) NULL,
+        price_checked_at DATETIME2(0) NULL,
+        price_status VARCHAR(20) NOT NULL CONSTRAINT DF_Catalog_Product_Reviews_PriceStatus DEFAULT ('NEEDS_REVIEW'),
+        product_status VARCHAR(20) NOT NULL CONSTRAINT DF_Catalog_Product_Reviews_ProductStatus DEFAULT ('NEEDS_REVIEW'),
+        public_preview BIT NOT NULL CONSTRAINT DF_Catalog_Product_Reviews_PublicPreview DEFAULT (0),
+        review_note NVARCHAR(1000) NULL,
+        reviewed_at DATETIME2(0) NULL,
+        CONSTRAINT FK_Catalog_Product_Reviews_Products FOREIGN KEY (product_id) REFERENCES dbo.Products(product_id),
+        CONSTRAINT FK_Catalog_Product_Reviews_Subcategories FOREIGN KEY (subcategory_id) REFERENCES dbo.Catalog_Subcategories(subcategory_id),
+        CONSTRAINT UQ_Catalog_Product_Reviews_Slug UNIQUE (slug),
+        CONSTRAINT CK_Catalog_Product_Reviews_ModelStatus CHECK (model_status IN ('VERIFIED','NEEDS_REVIEW')),
+        CONSTRAINT CK_Catalog_Product_Reviews_ImageStatus CHECK (image_status IN ('VERIFIED','NEEDS_REVIEW')),
+        CONSTRAINT CK_Catalog_Product_Reviews_PriceStatus CHECK (price_status IN ('VERIFIED','NEEDS_REVIEW','OWNER_SET')),
+        CONSTRAINT CK_Catalog_Product_Reviews_ProductStatus CHECK (product_status IN ('VERIFIED','NEEDS_REVIEW','OWNER_APPROVED'))
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.Catalog_Product_Variants', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Catalog_Product_Variants
+    (
+        variant_id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Catalog_Product_Variants PRIMARY KEY,
+        product_id INT NOT NULL,
+        variant_key VARCHAR(80) NOT NULL,
+        label NVARCHAR(100) NOT NULL,
+        price_vnd DECIMAL(18,2) NULL,
+        price_source_url NVARCHAR(1000) NULL,
+        price_checked_at DATETIME2(0) NULL,
+        price_status VARCHAR(20) NOT NULL CONSTRAINT DF_Catalog_Product_Variants_PriceStatus DEFAULT ('NEEDS_REVIEW'),
+        CONSTRAINT FK_Catalog_Product_Variants_Products FOREIGN KEY (product_id) REFERENCES dbo.Products(product_id),
+        CONSTRAINT UQ_Catalog_Product_Variants_Product_Key UNIQUE (product_id, variant_key),
+        CONSTRAINT CK_Catalog_Product_Variants_Price CHECK (price_vnd IS NULL OR price_vnd > 0),
+        CONSTRAINT CK_Catalog_Product_Variants_Status CHECK (price_status IN ('VERIFIED','NEEDS_REVIEW')),
+        CONSTRAINT CK_Catalog_Product_Variants_Verification CHECK (price_status <> 'VERIFIED' OR (price_vnd IS NOT NULL AND price_source_url IS NOT NULL AND price_checked_at IS NOT NULL))
+    );
+END;
 GO
 
 /* ================================================================
@@ -449,7 +520,7 @@ CREATE TABLE dbo.Orders
     ),
     CONSTRAINT CK_Orders_PaymentMethod CHECK
     (
-        payment_method IN ('COD', 'VNPAY', 'MOMO', 'ZALOPAY')
+        payment_method IN ('COD', 'BANK_QR', 'VNPAY', 'MOMO', 'ZALOPAY')
     ),
     CONSTRAINT CK_Orders_Status CHECK
     (
@@ -535,6 +606,10 @@ CREATE TABLE dbo.Payments
     transaction_code        VARCHAR(150)     NULL,
     provider_transaction_id VARCHAR(150)     NULL,
     gateway_response        NVARCHAR(MAX)    NULL,
+    bank_bin                VARCHAR(6)       NULL,
+    bank_name               NVARCHAR(100)    NULL,
+    bank_account_no         VARCHAR(30)      NULL,
+    bank_account_name       NVARCHAR(100)    NULL,
     paid_at                 DATETIME2(0)     NULL,
     created_at              DATETIME2(0)     NOT NULL
         CONSTRAINT DF_Payments_CreatedAt DEFAULT (SYSUTCDATETIME()),
@@ -547,18 +622,55 @@ CREATE TABLE dbo.Payments
         ON DELETE CASCADE,
     CONSTRAINT CK_Payments_Method CHECK
     (
-        payment_method IN ('COD', 'VNPAY', 'MOMO', 'ZALOPAY')
+        payment_method IN ('COD', 'BANK_QR', 'VNPAY', 'MOMO', 'ZALOPAY')
     ),
     CONSTRAINT CK_Payments_Status CHECK
     (
         payment_status IN ('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED')
     ),
-    CONSTRAINT CK_Payments_Amount CHECK (amount >= 0)
+    CONSTRAINT CK_Payments_Amount CHECK (amount >= 0),
+    CONSTRAINT CK_Payments_BankQrDetails CHECK
+    (
+        payment_method <> 'BANK_QR' OR
+        (bank_bin IS NOT NULL AND bank_name IS NOT NULL AND bank_account_no IS NOT NULL
+         AND bank_account_name IS NOT NULL AND transaction_code IS NOT NULL
+         AND amount > 0 AND amount = FLOOR(amount))
+    )
 );
+GO
+CREATE UNIQUE INDEX UX_Payments_BankQr_BankTransaction
+ON dbo.Payments(provider_transaction_id)
+WHERE payment_method = 'BANK_QR' AND provider_transaction_id IS NOT NULL;
 GO
 
 /* ================================================================
-   14. NOTIFICATIONS
+   14. ORDER REVIEWS
+   ================================================================ */
+CREATE TABLE dbo.OrderReviews
+(
+    review_id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_OrderReviews PRIMARY KEY,
+    order_id VARCHAR(50) NOT NULL,
+    user_id VARCHAR(50) NOT NULL,
+    author_name NVARCHAR(60) NOT NULL,
+    rating INT NOT NULL,
+    comment NVARCHAR(600) NULL,
+    share_publicly BIT NOT NULL CONSTRAINT DF_OrderReviews_SharePublicly DEFAULT (0),
+    is_visible BIT NOT NULL CONSTRAINT DF_OrderReviews_IsVisible DEFAULT (1),
+    shop_reply NVARCHAR(600) NULL,
+    created_at DATETIME2(0) NOT NULL CONSTRAINT DF_OrderReviews_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    replied_at DATETIME2(0) NULL,
+    CONSTRAINT UQ_OrderReviews_Order UNIQUE (order_id),
+    CONSTRAINT FK_OrderReviews_Orders FOREIGN KEY (order_id) REFERENCES dbo.Orders(order_id) ON DELETE CASCADE,
+    CONSTRAINT FK_OrderReviews_Users FOREIGN KEY (user_id) REFERENCES dbo.Users(user_id),
+    CONSTRAINT CK_OrderReviews_Rating CHECK (rating BETWEEN 1 AND 5),
+    CONSTRAINT CK_OrderReviews_Comment CHECK (comment IS NULL OR LEN(comment) BETWEEN 2 AND 600)
+);
+GO
+CREATE INDEX IX_OrderReviews_VisibleCreated ON dbo.OrderReviews(is_visible, created_at DESC);
+GO
+
+/* ================================================================
+   15. NOTIFICATIONS
    ================================================================ */
 CREATE TABLE dbo.Notifications
 (
@@ -581,7 +693,7 @@ CREATE TABLE dbo.Notifications
 GO
 
 /* ================================================================
-   15. ORDER STATUS HISTORY TRIGGER
+   16. ORDER STATUS HISTORY TRIGGER
    Automatically records initial status and every later status change.
    changed_by remains NULL because the database trigger cannot reliably infer
    the authenticated API user without using SQL SESSION_CONTEXT. The API can
@@ -785,7 +897,7 @@ VALUES
 (N'Accessories', NULL, N'Phụ kiện chăm sóc thú cưng', 4, 1);
 GO
 
-/* Replace coordinates/address with your real store before demo. */
+/* Demo storefront: the pin is near Tan Lap 1, not a verified house entrance. */
 INSERT INTO dbo.Stores
 (
     store_name,
@@ -798,11 +910,11 @@ INSERT INTO dbo.Stores
 )
 VALUES
 (
-    N'PetFood Main Store',
+    N'PawMart Pet Store',
     'STORE',
-    N'Ho Chi Minh City, Vietnam',
-    10.8230990,
-    106.6296640,
+    N'46/2 Tân Lập 1, phường Tăng Nhơn Phú, Thành phố Hồ Chí Minh, Việt Nam',
+    10.8483153,
+    106.7773630,
     NULL,
     1
 ),

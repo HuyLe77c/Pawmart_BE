@@ -11,6 +11,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<ProductCatalogReview> ProductCatalogReviews => Set<ProductCatalogReview>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Store> Stores => Set<Store>();
@@ -18,6 +19,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
+    public DbSet<OrderReview> OrderReviews => Set<OrderReview>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
@@ -31,6 +33,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         ConfigureCategories(modelBuilder);
         ConfigureProducts(modelBuilder);
         ConfigureProductImages(modelBuilder);
+        ConfigureProductCatalogReviews(modelBuilder);
         ConfigureCart(modelBuilder);
         ConfigureFavorites(modelBuilder);
         ConfigureStores(modelBuilder);
@@ -38,6 +41,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         ConfigureOrders(modelBuilder);
         ConfigureOrderItems(modelBuilder);
         ConfigureOrderStatusHistory(modelBuilder);
+        ConfigureOrderReviews(modelBuilder);
         ConfigurePayments(modelBuilder);
         ConfigureNotifications(modelBuilder);
     }
@@ -119,6 +123,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.LowStockThreshold).HasDefaultValue(5);
         e.Property(x => x.TargetPetType).HasMaxLength(20).IsUnicode(false).HasDefaultValue("ALL");
         e.Property(x => x.IsActive).HasDefaultValue(true);
+        e.Property(x => x.IsListed).HasDefaultValue(true);
         e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         e.HasOne<Category>().WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.NoAction);
         e.HasIndex(x => x.Sku).IsUnique().HasFilter("[sku] IS NOT NULL");
@@ -139,6 +144,27 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
         e.HasIndex(x => x.ProductId).IsUnique().HasFilter("[is_primary] = 1");
         e.HasIndex(x => new { x.ProductId, x.DisplayOrder }).IsUnique();
+    }
+
+    private static void ConfigureProductCatalogReviews(ModelBuilder modelBuilder)
+    {
+        var e = modelBuilder.Entity<ProductCatalogReview>();
+        e.ToTable("Catalog_Product_Reviews");
+        e.HasKey(x => x.ProductId);
+        e.Property(x => x.Slug).HasMaxLength(180).IsUnicode(false).IsRequired();
+        e.Property(x => x.ModelName).HasMaxLength(150).IsRequired();
+        e.Property(x => x.ShortDescription).HasMaxLength(500);
+        e.Property(x => x.OfficialUrl).HasMaxLength(1000).IsRequired();
+        e.Property(x => x.ModelStatus).HasMaxLength(20).IsUnicode(false).IsRequired();
+        e.Property(x => x.ImageSourceUrl).HasMaxLength(1000);
+        e.Property(x => x.ImageStatus).HasMaxLength(20).IsUnicode(false).IsRequired();
+        e.Property(x => x.PriceSourceUrl).HasMaxLength(1000);
+        e.Property(x => x.PriceStatus).HasMaxLength(20).IsUnicode(false).IsRequired();
+        e.Property(x => x.ProductStatus).HasMaxLength(20).IsUnicode(false).IsRequired();
+        e.Property(x => x.PublicPreview).HasDefaultValue(false);
+        e.Property(x => x.ReviewNote).HasMaxLength(1000);
+        e.HasOne<Product>().WithOne().HasForeignKey<ProductCatalogReview>(x => x.ProductId).OnDelete(DeleteBehavior.NoAction);
+        e.HasIndex(x => x.Slug).IsUnique();
     }
 
     private static void ConfigureCart(ModelBuilder modelBuilder)
@@ -252,6 +278,24 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.HasOne<User>().WithMany().HasForeignKey(x => x.ChangedBy).OnDelete(DeleteBehavior.NoAction);
     }
 
+    private static void ConfigureOrderReviews(ModelBuilder modelBuilder)
+    {
+        var e = modelBuilder.Entity<OrderReview>();
+        e.ToTable("OrderReviews");
+        e.HasKey(x => x.ReviewId);
+        e.Property(x => x.OrderId).HasMaxLength(50).IsUnicode(false).IsRequired();
+        e.Property(x => x.UserId).HasMaxLength(50).IsUnicode(false).IsRequired();
+        e.Property(x => x.AuthorName).HasMaxLength(60).IsRequired();
+        e.Property(x => x.Comment).HasMaxLength(600);
+        e.Property(x => x.ShopReply).HasMaxLength(600);
+        e.Property(x => x.IsVisible).HasDefaultValue(true);
+        e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        e.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
+        e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.NoAction);
+        e.HasIndex(x => x.OrderId).IsUnique();
+        e.HasIndex(x => new { x.IsVisible, x.CreatedAt });
+    }
+
     private static void ConfigurePayments(ModelBuilder modelBuilder)
     {
         var e = modelBuilder.Entity<Payment>();
@@ -264,6 +308,10 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.Amount).HasPrecision(18, 2);
         e.Property(x => x.TransactionCode).HasMaxLength(150).IsUnicode(false);
         e.Property(x => x.ProviderTransactionId).HasMaxLength(150).IsUnicode(false);
+        e.Property(x => x.BankBin).HasMaxLength(6).IsUnicode(false);
+        e.Property(x => x.BankName).HasMaxLength(100);
+        e.Property(x => x.BankAccountNo).HasMaxLength(30).IsUnicode(false);
+        e.Property(x => x.BankAccountName).HasMaxLength(100);
         e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         e.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
         e.HasIndex(x => x.OrderId).IsUnique();

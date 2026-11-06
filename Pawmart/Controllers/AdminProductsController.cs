@@ -21,6 +21,11 @@ public sealed class AdminProductsController(ProductService products, ProductImag
     public Task<AdminProductSummary> Summary(CancellationToken ct) =>
         products.GetAdminSummaryAsync(ct);
 
+    [HttpGet("{id:int}/catalog-review")]
+    [ProducesResponseType<CatalogReviewResponse>(StatusCodes.Status200OK)]
+    public Task<CatalogReviewResponse> CatalogReview(int id, CancellationToken ct) =>
+        products.GetCatalogReviewAsync(id, ct);
+
     [HttpPost("{id:int}/images/upload")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(21L * 1024 * 1024)]

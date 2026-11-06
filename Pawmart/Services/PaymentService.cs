@@ -15,6 +15,7 @@ public sealed class PaymentService(PawmartDbContext db, IPaymentGateway gateway)
             ?? throw new ApiException(404, "Order was not found.", "Not found");
         if (order.OrderStatus != "PENDING") throw new ApiException(409, "Online payment can only be initiated for a pending order.", "Invalid order state");
         if (order.PaymentMethod == "COD") throw new ApiException(409, "Cash-on-delivery orders do not require online payment.", "Payment not required");
+        if (order.PaymentMethod == "BANK_QR") throw new ApiException(409, "Use the bank QR instructions for this order.", "Payment method mismatch");
         var payment = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId, ct)
             ?? throw new ApiException(404, "Payment record was not found.", "Not found");
         if (payment.PaymentStatus == "SUCCESS") throw new ApiException(409, "This order has already been paid.", "Already paid");
@@ -38,6 +39,7 @@ public sealed class PaymentService(PawmartDbContext db, IPaymentGateway gateway)
             ?? throw new ApiException(404, "Payment record was not found.", "Not found");
         var order = await db.Orders.SingleAsync(x => x.OrderId == result.OrderId, ct);
         if (order.PaymentMethod == "COD") throw new ApiException(409, "Cash-on-delivery orders cannot receive an online payment callback.", "Payment method mismatch");
+        if (order.PaymentMethod == "BANK_QR") throw new ApiException(409, "Bank QR requires bank reconciliation, not a gateway callback.", "Payment method mismatch");
         if (order.OrderStatus == "CANCELLED") throw new ApiException(409, "Cancelled orders cannot receive a successful payment callback.", "Order cancelled");
         if (payment.Amount != result.Amount) throw new ApiException(409, "Payment amount does not match the order.", "Payment amount mismatch");
         if (string.IsNullOrWhiteSpace(payment.TransactionCode) || !string.Equals(payment.TransactionCode, result.TransactionCode, StringComparison.Ordinal))
