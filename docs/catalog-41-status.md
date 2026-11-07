@@ -1,6 +1,6 @@
 # Catalog PawMart: 41 mẫu có ảnh và mô tả
 
-Cập nhật 2026-11-06. Danh sách tên tiếng Việt, model và URL nguồn nằm trong `Database/catalog-41-sources.csv`. Trạng thái `VERIFIED` của model chỉ xác nhận danh tính mẫu; không xác nhận quyền dùng ảnh, giá VNĐ, tồn kho hoặc toàn bộ nội dung. Giá bán và tồn kho ban đầu trong `Database/catalog-41-owner-prices.csv` do chủ dự án cho phép PawMart tự đặt; đây không phải giá thị trường đã xác minh hay kiểm kê hàng thật.
+Cập nhật 2026-11-06. Danh sách tên tiếng Việt, model và URL nguồn nằm trong `Database/catalog/catalog-41-sources.csv`. Trạng thái `VERIFIED` của model chỉ xác nhận danh tính mẫu; không xác nhận quyền dùng ảnh, giá VNĐ, tồn kho hoặc toàn bộ nội dung. Giá bán và tồn kho ban đầu trong `Database/catalog/catalog-41-owner-prices.csv` do chủ dự án cho phép PawMart tự đặt; đây không phải giá thị trường đã xác minh hay kiểm kê hàng thật.
 
 | Nhóm | Số mẫu |
 | --- | ---: |
@@ -10,7 +10,7 @@ Cập nhật 2026-11-06. Danh sách tên tiếng Việt, model và URL nguồn n
 | Thực phẩm bổ sung | 9 |
 | Phụ kiện và thiết bị | 5 |
 
-38 model có nguồn hãng phù hợp. A01 chưa tìm được trang hãng Việt Nam; A04 cần xác minh tên công thức “Lamb & Rice” trên nhãn; E05 dùng trang PETKIT Đức của PURAMAX 2 thay cho URL hãng cũ đã chuyển sang model khác. Bộ dữ liệu ZIP do người dùng cung cấp có 41 mô tả ngắn tiếng Việt nhưng không chứa ảnh hay giá; mô tả hiển thị được bổ sung từ `Database/catalog-41-curated-details.vi.tsv` dựa trên trang sản phẩm tương ứng. Đã lấy 41 ảnh, đối chiếu bằng bảng ảnh và lưu trong `Pawmart/wwwroot/uploads/products`; bảng URL và SHA-256 ở `Database/catalog-41-image-sources.csv`. Trạng thái ảnh `VERIFIED` trong database chỉ có nghĩa đã đối chiếu ảnh với model. Quyền sử dụng ảnh cần được xác nhận riêng trước khi phát hành công khai. Có 18 quy cách tham khảo trong `Database/catalog-41-variant-leads.csv`, tất cả `price_vnd = NULL`.
+38 model có nguồn hãng phù hợp. A01 chưa tìm được trang hãng Việt Nam; A04 cần xác minh tên công thức “Lamb & Rice” trên nhãn; E05 dùng trang PETKIT Đức của PURAMAX 2 thay cho URL hãng cũ đã chuyển sang model khác. Bộ dữ liệu ZIP do người dùng cung cấp có 41 mô tả ngắn tiếng Việt nhưng không chứa ảnh hay giá; mô tả hiển thị được bổ sung từ `Database/catalog/catalog-41-curated-details.vi.tsv` dựa trên trang sản phẩm tương ứng. Đã lấy 41 ảnh, đối chiếu bằng bảng ảnh và lưu trong `Pawmart/wwwroot/uploads/products`; bảng URL và SHA-256 ở `Database/catalog/catalog-41-image-sources.csv`. Trạng thái ảnh `VERIFIED` trong database chỉ có nghĩa đã đối chiếu ảnh với model. Quyền sử dụng ảnh cần được xác nhận riêng trước khi phát hành công khai. Có 18 quy cách tham khảo trong `Database/catalog/catalog-41-variant-leads.csv`, tất cả `price_vnd = NULL`.
 
 ## Trạng thái trên app
 
@@ -24,10 +24,10 @@ Backend cho kích hoạt khi ảnh đã được đối chiếu, có ảnh lưu,
 
 Bản sao lưu trước khi công khai bản xem trước: `C:\Users\Public\Documents\PetFoodDB-before-public-preview-20261106.bak`; đã chạy `RESTORE VERIFYONLY`.
 
-- Database hiện có chưa có catalog: chạy `Database/2026-11-05_CatalogReview.sql`, `Database/2026-11-05_Catalog41_Upsert.sql`, `Database/2026-11-06_CatalogPublicPreview.sql`, `Database/2026-11-06_Catalog41_Enrichment.sql`, rồi `Database/2026-11-06_Catalog41_OwnerPricing.sql`.
-- Database đã nhập catalog và ảnh: chạy `Database/2026-11-06_Catalog41_OwnerPricing.sql`.
+- Database hiện có chưa có catalog: chạy `Database/migrations/2026-11-05_CatalogReview.sql`, `Database/migrations/2026-11-05_Catalog41_Upsert.sql`, `Database/migrations/2026-11-06_CatalogPublicPreview.sql`, `Database/migrations/2026-11-06_Catalog41_Enrichment.sql`, rồi `Database/migrations/2026-11-06_Catalog41_OwnerPricing.sql`.
+- Database đã nhập catalog và ảnh: chạy `Database/migrations/2026-11-06_Catalog41_OwnerPricing.sql`.
 - Database mới: baseline `Database/PetFoodDB_PRM393_Complete_SQLServer.sql` đã có schema; chạy import, enrichment và owner pricing. Sao chép cả `Pawmart/wwwroot/uploads/products` khi chuyển sang máy khác.
-- Mỗi file SQL chạy bằng `sqlcmd -S localhost\SQLEXPRESS -d PetFoodDB -E -b -f 65001 -i <tệp>`. Khi sửa bảng giá CSV, chạy `python Database/build_catalog_41_owner_pricing.py`; migration không nạp lại tồn kho của sản phẩm đã duyệt bán khi chạy lại. Bảng CSV là nguồn giá chủ dự án tự đặt, không phải chứng từ nhập kho.
+- Mỗi file SQL chạy bằng `sqlcmd -S localhost\SQLEXPRESS -d PetFoodDB -E -b -f 65001 -i <tệp>`. Khi sửa bảng giá CSV, chạy `python Database/catalog/build_catalog_41_owner_pricing.py`; migration không nạp lại tồn kho của sản phẩm đã duyệt bán khi chạy lại. Bảng CSV là nguồn giá chủ dự án tự đặt, không phải chứng từ nhập kho.
 
 ## Kiểm tra đã thực hiện
 

@@ -82,7 +82,7 @@ IF EXISTS
     (
         N'Users', N'Pets', N'Categories', N'Products', N'Product_Images',
         N'CartItems', N'Favorites', N'Orders', N'OrderItems',
-        N'OrderStatusHistory', N'Payments', N'Promotions',
+        N'OrderStatusHistory', N'Payments', N'BankQrWebhookEvents', N'Promotions',
         N'Notifications', N'Stores'
     )
 )
@@ -641,6 +641,32 @@ GO
 CREATE UNIQUE INDEX UX_Payments_BankQr_BankTransaction
 ON dbo.Payments(provider_transaction_id)
 WHERE payment_method = 'BANK_QR' AND provider_transaction_id IS NOT NULL;
+GO
+
+CREATE TABLE dbo.BankQrWebhookEvents
+(
+    provider_event_id BIGINT NOT NULL CONSTRAINT PK_BankQrWebhookEvents PRIMARY KEY,
+    order_id VARCHAR(50) NULL,
+    transfer_code VARCHAR(150) NULL,
+    account_number VARCHAR(30) NOT NULL,
+    gateway VARCHAR(100) NULL,
+    reference_code VARCHAR(150) NULL,
+    amount DECIMAL(18,2) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    created_at DATETIME2(0) NOT NULL CONSTRAINT DF_BankQrWebhookEvents_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    CONSTRAINT CK_BankQrWebhookEvents_Amount CHECK (amount > 0),
+    CONSTRAINT CK_BankQrWebhookEvents_Status CHECK
+    (
+        status IN ('UNMATCHED', 'OUTGOING', 'DUPLICATE_REFERENCE', 'ACCOUNT_MISMATCH',
+            'CANCELLED_ORDER', 'ALREADY_PAID', 'PAYMENT_CONFLICT', 'PARTIAL', 'APPLIED')
+    )
+);
+GO
+CREATE INDEX IX_BankQrWebhookEvents_OrderId ON dbo.BankQrWebhookEvents(order_id);
+GO
+CREATE INDEX IX_BankQrWebhookEvents_GatewayReference
+ON dbo.BankQrWebhookEvents(gateway, reference_code)
+WHERE reference_code IS NOT NULL;
 GO
 
 /* ================================================================

@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-API_ROOT = ROOT.parent / "Pawmart"
+API_ROOT = ROOT.parent.parent / "Pawmart"
 MEDIA_ROOT = API_ROOT / "wwwroot" / "uploads" / "products"
 MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 products = json.loads((ROOT / "catalog-41-supplied.vi.json").read_text(encoding="utf-8"))["products"]
@@ -135,5 +135,5 @@ JOIN dbo.Catalog_Product_Reviews review ON review.product_id = product.product_i
 WHERE product.sku LIKE 'CAT41-%';
 GO
 """
-(ROOT / "2026-11-06_Catalog41_Enrichment.sql").write_text(sql, encoding="utf-8-sig")
+(ROOT.parent / "migrations" / "2026-11-06_Catalog41_Enrichment.sql").write_text(sql, encoding="utf-8-sig")
 print("Generated 41 descriptions and 41 product photos")

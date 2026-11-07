@@ -15,7 +15,7 @@ Khách chọn có chia sẻ công khai hay không; mặc định là **không**.
 
 ## Database
 
-Sao lưu database, rồi chạy `Database/2026-11-06_OrderReviews.sql` sau migration COD/QR. Script có thể chạy lại; tạo `dbo.OrderReviews`, khóa duy nhất theo đơn, khóa ngoại, giới hạn số sao và độ dài nhận xét. Baseline `Database/PetFoodDB_PRM393_Complete_SQLServer.sql` được cập nhật cùng cấu trúc. Bản sao lưu trước khi áp dụng trên máy phát triển: `C:\Users\Public\Documents\PetFoodDB-before-order-reviews-20261106.bak` (`RESTORE VERIFYONLY` đã kiểm tra).
+Sao lưu database, rồi chạy `Database/migrations/2026-11-06_OrderReviews.sql` sau migration COD/QR. Script có thể chạy lại; tạo `dbo.OrderReviews`, khóa duy nhất theo đơn, khóa ngoại, giới hạn số sao và độ dài nhận xét. Baseline `Database/PetFoodDB_PRM393_Complete_SQLServer.sql` được cập nhật cùng cấu trúc. Bản sao lưu trước khi áp dụng trên máy phát triển: `C:\Users\Public\Documents\PetFoodDB-before-order-reviews-20261106.bak` (`RESTORE VERIFYONLY` đã kiểm tra).
 
 ## Kiểm tra ngày 06/11/2026
 
