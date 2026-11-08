@@ -66,6 +66,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.UserId).HasMaxLength(50).IsUnicode(false);
         e.Property(x => x.Email).HasMaxLength(150).IsRequired();
         e.Property(x => x.PasswordHash).HasMaxLength(255).IsRequired();
+        e.Property(x => x.GoogleSubject).HasMaxLength(255).IsUnicode(false);
         e.Property(x => x.FullName).HasMaxLength(100).IsRequired();
         e.Property(x => x.PhoneNumber).HasMaxLength(20).IsUnicode(false);
         e.Property(x => x.Role).HasMaxLength(20).IsUnicode(false).HasDefaultValue("CUSTOMER");
@@ -73,6 +74,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.IsActive).HasDefaultValue(true);
         e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         e.HasIndex(x => x.Email).IsUnique();
+        e.HasIndex(x => x.GoogleSubject).IsUnique().HasFilter("[google_subject] IS NOT NULL");
         e.HasIndex(x => new { x.Role, x.IsActive });
     }
 

@@ -101,6 +101,7 @@ CREATE TABLE dbo.Users
     user_id                 VARCHAR(50)      NOT NULL,
     email                   NVARCHAR(150)    NOT NULL,
     password_hash           NVARCHAR(255)    NOT NULL,
+    google_subject          VARCHAR(255)     NULL,
     full_name               NVARCHAR(100)    NOT NULL,
     phone_number            VARCHAR(20)      NULL,
     role                    VARCHAR(20)      NOT NULL
@@ -762,6 +763,11 @@ GO
    ================================================================ */
 
 /* Users */
+CREATE UNIQUE INDEX UX_Users_GoogleSubject
+    ON dbo.Users(google_subject)
+    WHERE google_subject IS NOT NULL;
+GO
+
 CREATE INDEX IX_Users_Role_IsActive
     ON dbo.Users(role, is_active);
 GO

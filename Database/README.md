@@ -21,4 +21,6 @@ Thư mục này chỉ giữ **một file SQL ở cấp chính**: `PetFoodDB_PRM3
 
 Các bảng/cột của những migration còn lại đã có trong file tạo database mới. Chỉ chọn migration riêng khi cập nhật một database cũ; sao lưu database trước khi cập nhật. Xem tài liệu tương ứng trong `docs/` để biết thứ tự và điều kiện của từng tính năng. Không chạy file tạo database mới sau khi khôi phục `.bak`.
 
+Để bật đăng nhập Google trên database cũ, chạy `migrations/2026-11-08_GoogleSignIn.sql` sau khi sao lưu; xem `docs/google-sign-in.md` để thiết lập OAuth.
+
 Các file Python trong `catalog/` chỉ dùng khi cần tạo lại SQL catalog từ dữ liệu nguồn. Chúng ghi kết quả vào `migrations/`; không cần chạy chúng để khởi động BE hoặc dùng app.

@@ -26,6 +26,12 @@ public sealed class LoginRequest
     public string Password { get; init; } = "";
 }
 
+public sealed class GoogleLoginRequest
+{
+    [Required, StringLength(8192, MinimumLength = 20)]
+    public string IdToken { get; init; } = "";
+}
+
 public sealed record UserResponse(string UserId, string Email, string FullName, string? PhoneNumber, string Role);
 
 public sealed record AuthResult(string AccessToken, DateTime ExpiresAtUtc, UserResponse User);
