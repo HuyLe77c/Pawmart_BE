@@ -49,16 +49,26 @@ public sealed record CatalogReviewResponse(
     string? ShortDescription, string? Benefits, string? UsageInstructions,
     string? Warnings, string? StorageInstructions, string? ReviewNote, bool PublicPreview);
 
-public sealed class ProductQuery
+public sealed class ProductQuery : IValidatableObject
 {
     [StringLength(120)] public string? Search { get; init; }
     [Range(1, int.MaxValue)] public int? CategoryId { get; init; }
     [RegularExpression("^(DOG|CAT|ALL|OTHER)$")] public string? PetType { get; init; }
     public bool? Active { get; init; }
     [StringLength(100)] public string? Brand { get; init; }
+    [StringLength(100)] public string? Breed { get; init; }
+    [Range(typeof(decimal), "0", "9999999999999999")] public decimal? MinPrice { get; init; }
+    [Range(typeof(decimal), "0", "9999999999999999")] public decimal? MaxPrice { get; init; }
+    public bool? InStock { get; init; }
     [Range(1, 1000)] public int Page { get; init; } = 1;
     [Range(1, 100)] public int PageSize { get; init; } = 20;
     [RegularExpression("^(recommended|price_asc|price_desc|name|newest)$")] public string Sort { get; init; } = "newest";
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (MinPrice.HasValue && MaxPrice.HasValue && MinPrice > MaxPrice)
+            yield return new ValidationResult("Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu.", [nameof(MaxPrice)]);
+    }
 }
 
 public sealed record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalItems);

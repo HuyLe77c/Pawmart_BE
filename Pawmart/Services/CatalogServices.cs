@@ -53,14 +53,10 @@ public sealed class ProductService(PawmartDbContext db, ProductImageStorageServi
             (x.IsActive || db.ProductCatalogReviews.Any(review =>
                 review.ProductId == x.ProductId && review.PublicPreview)));
         if (includeInactive && query.Active.HasValue) products = products.Where(x => x.IsActive == query.Active.Value);
-        if (query.CategoryId.HasValue) products = products.Where(x => x.CategoryId == query.CategoryId);
-        if (!string.IsNullOrWhiteSpace(query.PetType)) products = products.Where(x => x.TargetPetType == "ALL" || x.TargetPetType == query.PetType);
-        if (!string.IsNullOrWhiteSpace(query.Brand)) products = products.Where(x => x.Brand != null && x.Brand.ToLower() == query.Brand.Trim().ToLower());
-        if (!string.IsNullOrWhiteSpace(query.Search))
-        {
-            var term = query.Search.Trim();
-            products = products.Where(x => x.ProductName.Contains(term) || (x.Sku != null && x.Sku.Contains(term)) || (x.Brand != null && x.Brand.Contains(term)) || (x.Description != null && x.Description.Contains(term)));
-        }
+        if (query.MinPrice.HasValue || query.MaxPrice.HasValue)
+            products = products.Where(x => !db.ProductCatalogReviews.Any(review => review.ProductId == x.ProductId
+                && review.PriceStatus != "VERIFIED" && review.PriceStatus != "OWNER_SET"));
+        products = ProductCatalogFilters.Apply(products, query);
 
         products = query.Sort switch
         {
