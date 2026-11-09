@@ -85,6 +85,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.HasKey(x => x.PetId);
         e.Property(x => x.PetName).HasMaxLength(50).IsRequired();
         e.Property(x => x.PetType).HasMaxLength(20).IsUnicode(false).IsRequired();
+        e.Property(x => x.Gender).HasMaxLength(10).IsUnicode(false).IsRequired().HasDefaultValue("UNKNOWN");
         e.Property(x => x.Breed).HasMaxLength(100);
         e.Property(x => x.WeightKg).HasPrecision(5, 2);
         e.Property(x => x.BodySize).HasMaxLength(10).IsUnicode(false);

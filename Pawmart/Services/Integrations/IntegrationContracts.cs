@@ -7,7 +7,7 @@ public sealed record VerifiedPaymentCallback(string OrderId, decimal Amount, boo
 public sealed record ShippingQuote(decimal DistanceKm, decimal Fee);
 public sealed record AiProductCandidate(int ProductId, string Name, string TargetPetType, string? Description,
     string? Ingredients, decimal Price, bool IsTreat);
-public sealed record AiRecommendationRequest(string PetType, string? Breed, int? AgeMonths, decimal? WeightKg,
+public sealed record AiRecommendationRequest(string PetType, string Gender, string? Breed, int? AgeMonths, decimal? WeightKg,
     string? SpecialNotes, string? BodySize, string? ActivityLevel, int? BodyConditionScore,
     string? FeedingHabits, string? FoodPreferences, IReadOnlyList<AiProductCandidate> Products);
 public sealed record AiRecommendationResponse(string Advice, IReadOnlyList<int> RecommendedProductIds);

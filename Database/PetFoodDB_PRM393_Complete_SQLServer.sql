@@ -132,6 +132,8 @@ CREATE TABLE dbo.Pets
     user_id         VARCHAR(50)      NOT NULL,
     pet_name        NVARCHAR(50)     NOT NULL,
     pet_type        VARCHAR(20)      NOT NULL,
+    gender          VARCHAR(10)      NOT NULL
+        CONSTRAINT DF_Pets_Gender DEFAULT ('UNKNOWN'),
     breed           NVARCHAR(100)    NULL,
     age_months      INT              NULL,
     weight_kg       DECIMAL(5,2)     NULL,
@@ -151,6 +153,7 @@ CREATE TABLE dbo.Pets
         REFERENCES dbo.Users(user_id)
         ON DELETE CASCADE,
     CONSTRAINT CK_Pets_Type CHECK (pet_type IN ('DOG', 'CAT', 'OTHER')),
+    CONSTRAINT CK_Pets_Gender CHECK (gender IN ('MALE', 'FEMALE', 'UNKNOWN')),
     CONSTRAINT CK_Pets_Age CHECK (age_months IS NULL OR age_months BETWEEN 0 AND 600),
     CONSTRAINT CK_Pets_Weight CHECK (weight_kg IS NULL OR weight_kg > 0),
     CONSTRAINT CK_Pets_BodySize CHECK (body_size IS NULL OR body_size IN ('SMALL', 'MEDIUM', 'LARGE')),

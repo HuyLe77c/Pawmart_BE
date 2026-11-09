@@ -61,7 +61,7 @@ public sealed class RecommendationService(PawmartDbContext db, IAiRecommendation
         var usedFallback = false;
         try
         {
-            response = await ai.RecommendAsync(new AiRecommendationRequest(pet.PetType, pet.Breed, pet.AgeMonths,
+            response = await ai.RecommendAsync(new AiRecommendationRequest(pet.PetType, pet.Gender, pet.Breed, pet.AgeMonths,
                 pet.WeightKg, pet.SpecialNotes, pet.BodySize, pet.ActivityLevel, pet.BodyConditionScore,
                 pet.FeedingHabits, pet.FoodPreferences, candidates), ct);
         }
@@ -95,6 +95,7 @@ public sealed class RecommendationService(PawmartDbContext db, IAiRecommendation
     private static string DescribeProfile(Pet pet)
     {
         var facts = new List<string> { pet.PetType == "CAT" ? "mèo" : pet.PetType == "DOG" ? "chó" : "thú cưng" };
+        if (pet.Gender is "MALE" or "FEMALE") facts.Add(pet.Gender == "MALE" ? "đực" : "cái");
         if (!string.IsNullOrWhiteSpace(pet.Breed)) facts.Add($"giống {pet.Breed.Trim()}");
         if (pet.AgeMonths is not null) facts.Add($"{pet.AgeMonths} tháng tuổi");
         if (pet.WeightKg is not null) facts.Add($"{pet.WeightKg:0.##} kg");

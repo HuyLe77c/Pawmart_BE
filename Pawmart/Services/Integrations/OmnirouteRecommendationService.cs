@@ -9,7 +9,7 @@ public sealed class OmnirouteRecommendationService(OmnirouteClient client) : IAi
     {
         var context = JsonSerializer.Serialize(new
         {
-            pet = new { request.PetType, request.Breed, request.AgeMonths, request.WeightKg, request.SpecialNotes,
+            pet = new { request.PetType, request.Gender, request.Breed, request.AgeMonths, request.WeightKg, request.SpecialNotes,
                 request.BodySize, request.ActivityLevel, request.BodyConditionScore, request.FeedingHabits, request.FoodPreferences },
             products = request.Products.Select(p => new { p.ProductId, p.Name, p.TargetPetType, p.Description, p.Ingredients, p.Price, p.IsTreat })
         });
