@@ -19,7 +19,7 @@ public sealed record OrderStatusHistoryResponse(string Status, string? Note, Dat
 public sealed record PaymentMethodsResponse(bool CodAvailable, bool BankQrAvailable);
 public sealed record BankQrInstructionsResponse(string OrderId, decimal Amount, string BankName,
     string BankAccountNo, string BankAccountName, string TransferContent, string QrImageUrl,
-    string PaymentStatus, string OrderStatus);
+    string PaymentStatus, string OrderStatus, decimal ReceivedAmount = 0);
 public sealed class ConfirmPaymentRequest
 {
     [Range(typeof(decimal), "0.01", "9999999999999")] public decimal ReceivedAmount { get; init; }

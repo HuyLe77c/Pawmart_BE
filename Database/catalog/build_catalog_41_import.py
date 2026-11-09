@@ -9,7 +9,7 @@ import unicodedata
 ROOT = pathlib.Path(__file__).resolve().parent
 SOURCE = ROOT / "catalog-41-sources.csv"
 VARIANT_SOURCE = ROOT / "catalog-41-variant-leads.csv"
-OUTPUT = ROOT / "2026-11-05_Catalog41_Upsert.sql"
+OUTPUT = ROOT.parent / "migrations" / "2026-11-05_Catalog41_Upsert.sql"
 EXPECTED = {"A": 8, "B": 8, "C": 11, "D": 9, "E": 5}
 
 

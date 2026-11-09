@@ -21,6 +21,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
     public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
     public DbSet<OrderReview> OrderReviews => Set<OrderReview>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<BankQrWebhookEvent> BankQrWebhookEvents => Set<BankQrWebhookEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -43,6 +44,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         ConfigureOrderStatusHistory(modelBuilder);
         ConfigureOrderReviews(modelBuilder);
         ConfigurePayments(modelBuilder);
+        ConfigureBankQrWebhookEvents(modelBuilder);
         ConfigureNotifications(modelBuilder);
     }
 
@@ -64,6 +66,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.UserId).HasMaxLength(50).IsUnicode(false);
         e.Property(x => x.Email).HasMaxLength(150).IsRequired();
         e.Property(x => x.PasswordHash).HasMaxLength(255).IsRequired();
+        e.Property(x => x.GoogleSubject).HasMaxLength(255).IsUnicode(false);
         e.Property(x => x.FullName).HasMaxLength(100).IsRequired();
         e.Property(x => x.PhoneNumber).HasMaxLength(20).IsUnicode(false);
         e.Property(x => x.Role).HasMaxLength(20).IsUnicode(false).HasDefaultValue("CUSTOMER");
@@ -71,6 +74,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.IsActive).HasDefaultValue(true);
         e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         e.HasIndex(x => x.Email).IsUnique();
+        e.HasIndex(x => x.GoogleSubject).IsUnique().HasFilter("[google_subject] IS NOT NULL");
         e.HasIndex(x => new { x.Role, x.IsActive });
     }
 
@@ -315,6 +319,24 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         e.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
         e.HasIndex(x => x.OrderId).IsUnique();
+    }
+
+    private static void ConfigureBankQrWebhookEvents(ModelBuilder modelBuilder)
+    {
+        var e = modelBuilder.Entity<BankQrWebhookEvent>();
+        e.ToTable("BankQrWebhookEvents");
+        e.HasKey(x => x.ProviderEventId);
+        e.Property(x => x.ProviderEventId).ValueGeneratedNever();
+        e.Property(x => x.OrderId).HasMaxLength(50).IsUnicode(false);
+        e.Property(x => x.TransferCode).HasMaxLength(150).IsUnicode(false);
+        e.Property(x => x.AccountNumber).HasMaxLength(30).IsUnicode(false).IsRequired();
+        e.Property(x => x.Gateway).HasMaxLength(100).IsUnicode(false);
+        e.Property(x => x.ReferenceCode).HasMaxLength(150).IsUnicode(false);
+        e.Property(x => x.Amount).HasPrecision(18, 2);
+        e.Property(x => x.Status).HasMaxLength(30).IsUnicode(false).IsRequired();
+        e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        e.HasIndex(x => x.OrderId);
+        e.HasIndex(x => new { x.Gateway, x.ReferenceCode });
     }
 
     private static void ConfigureNotifications(ModelBuilder modelBuilder)

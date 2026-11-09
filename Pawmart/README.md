@@ -4,7 +4,7 @@ ASP.NET Core 10 Web API for the PetFoodDB SQL Server schema. Swagger UI is avail
 
 ## Local setup
 
-1. Run `../Database/PetFoodDB_PRM393_Complete_SQLServer.sql` in SSMS only against a new/empty `PetFoodDB` database, or restore the snapshot in `../Database/PetFoodDB-20261018.bak` when you need its saved data.
+1. Follow [Database/README.md](../Database/README.md) to create a new `PetFoodDB` and load the 41-product catalog. The older snapshot is in `../Database/backup/PetFoodDB-20261018.bak`.
 2. Confirm the SQL Server `SQLEXPRESS` instance is running; the checked-in connection string uses `localhost\SQLEXPRESS` with Windows authentication. Change `ConnectionStrings:PetFoodDb` if your database is on another instance.
 3. From this folder, run:
 
@@ -45,7 +45,9 @@ Log in again after promotion so the JWT contains the ADMIN role. Keep database w
 
 ## External providers
 
-Payment initiation/callback verification, distance quoting, and Firebase push delivery remain behind optional provider interfaces. Checkout works with the configured flat shipping fee and COD.
+Bank QR checkout can reconcile incoming transfers automatically through an authenticated SePay webhook; apply the database migration and configure SePay as described in [checkout-cod-bank-qr.md](../docs/checkout-cod-bank-qr.md). Other payment gateway initiation/callback verification, distance quoting, and Firebase push delivery remain behind optional provider interfaces. Checkout works with the configured flat shipping fee and COD.
+
+For a local SePay demo on Windows, set the SePay webhook key in .NET User Secrets, authenticate ngrok locally, then run `powershell -NoProfile -ExecutionPolicy Bypass -File ..\scripts\start-pawmart-with-ngrok.ps1` from this folder. The script prints the public HTTPS webhook URL to paste into SePay. Update that URL there whenever the ngrok URL changes.
 
 ## Chat AI with Omniroute
 
@@ -71,9 +73,9 @@ When Omniroute or its selected model is unavailable, the API responds with a saf
 
 Pet food advice is checked by the API before it is shown: it uses only active, stocked food/treat products for the pet type, removes clearly age-incompatible products, and excludes ingredients explicitly listed as allergens in the pet notes. A missing allergen in the stored ingredient list is **not** an allergy-safe certification; customers should check the package for cross-contact. For urgent symptoms and conditions requiring a veterinary diet, the API returns no product recommendation and directs the customer to a veterinarian. Chat AI applies the same safeguards to explicit health questions and, when there is exactly one pet profile, to food questions about that pet. These rules are conservative and cannot diagnose disease or replace veterinary care.
 
-For an existing `PetFoodDB`, apply `Database/2026-10-28_PetsNutritionProfile.sql` once before starting the updated API. It adds optional size, activity, 1–9 body condition score, feeding habits, and food preferences to `Pets`; it is safe to rerun. The baseline `Database/PetFoodDB_PRM393_Complete_SQLServer.sql` includes the same columns for a fresh database. Existing pet profiles remain valid with null values. The Flutter pet form can edit these fields, and the recommendation endpoint returns source URLs alongside its advice.
+For an existing `PetFoodDB`, apply `Database/migrations/2026-10-28_PetsNutritionProfile.sql` once before starting the updated API. It adds optional size, activity, 1–9 body condition score, feeding habits, and food preferences to `Pets`; it is safe to rerun. The baseline `Database/PetFoodDB_PRM393_Complete_SQLServer.sql` includes the same columns for a fresh database. Existing pet profiles remain valid with null values. The Flutter pet form can edit these fields, and the recommendation endpoint returns source URLs alongside its advice.
 
-For an existing database, also run `Database/2026-10-30_ProductShoppingDetails.sql` before starting this API version. It adds optional `package_size`, `life_stage`, and `feeding_guide` product fields. The baseline script contains the same columns. Existing products keep null values; admins should enter only verified package or shop information. The product form now edits description, ingredients, nutrition, package size, life stage, and feeding guide.
+For an existing database, also run `Database/migrations/2026-10-30_ProductShoppingDetails.sql` before starting this API version. It adds optional `package_size`, `life_stage`, and `feeding_guide` product fields. The baseline script contains the same columns. Existing products keep null values; admins should enter only verified package or shop information. The product form now edits description, ingredients, nutrition, package size, life stage, and feeding guide.
 
 Checkout uses `POST /api/cart/checkout/quote` with an optional `promotionCode` to return current items, subtotal, discount, configured shipping fee, total, and a fingerprint. The Flutter checkout shows this quote before enabling order submission and sends its fingerprint as `expectedQuoteFingerprint` to `POST /api/cart/checkout`. A changed cart, price, shipping fee, or promotion returns HTTP 409 so the customer can review a new quote. The order endpoint still recalculates and validates stock in its transaction. The configured flat shipping fee is 25,000 VND.
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 root = Path(__file__).parent
 source = root / 'catalog-41-owner-prices.csv'
-output = root / '2026-11-06_Catalog41_OwnerPricing.sql'
+output = root.parent / 'migrations' / '2026-11-06_Catalog41_OwnerPricing.sql'
 with source.open(encoding='utf-8-sig', newline='') as handle:
     rows = list(csv.DictReader(handle))
 

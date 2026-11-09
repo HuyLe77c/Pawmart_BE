@@ -45,13 +45,17 @@ public sealed class BankQrService(PawmartDbContext db, IConfiguration configurat
             || payment.BankAccountName is null || payment.TransactionCode is null)
             throw new ApiException(409, "Bank QR information is missing from this order.", "Payment data missing");
 
+        var receivedAmount = await db.BankQrWebhookEvents.AsNoTracking()
+            .Where(x => x.OrderId == orderId && (x.Status == "PARTIAL" || x.Status == "APPLIED"))
+            .SumAsync(x => (decimal?)x.Amount, ct) ?? 0m;
+        var remainingAmount = Math.Max(0m, payment.Amount - receivedAmount);
         var imageUrl = $"https://img.vietqr.io/image/{payment.BankBin}-{payment.BankAccountNo}-compact2.png"
-            + $"?amount={payment.Amount.ToString("0", CultureInfo.InvariantCulture)}"
+            + $"?amount={remainingAmount.ToString("0", CultureInfo.InvariantCulture)}"
             + $"&addInfo={Uri.EscapeDataString(payment.TransactionCode)}"
             + $"&accountName={Uri.EscapeDataString(payment.BankAccountName)}";
         return new BankQrInstructionsResponse(orderId, payment.Amount, payment.BankName,
             payment.BankAccountNo, payment.BankAccountName, payment.TransactionCode,
-            imageUrl, payment.PaymentStatus, order.OrderStatus);
+            imageUrl, payment.PaymentStatus, order.OrderStatus, receivedAmount);
     }
 
     public async Task ConfirmReceiptAsync(string adminUserId, string orderId, ConfirmPaymentRequest request, CancellationToken ct)

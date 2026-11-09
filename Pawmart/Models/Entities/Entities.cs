@@ -5,6 +5,7 @@ public sealed class User
     public string UserId { get; set; } = "";
     public string Email { get; set; } = "";
     public string PasswordHash { get; set; } = "";
+    public string? GoogleSubject { get; set; }
     public string FullName { get; set; } = "";
     public string? PhoneNumber { get; set; }
     public string Role { get; set; } = "CUSTOMER";
@@ -237,6 +238,19 @@ public sealed class Payment
     public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+}
+
+public sealed class BankQrWebhookEvent
+{
+    public long ProviderEventId { get; set; }
+    public string? OrderId { get; set; }
+    public string? TransferCode { get; set; }
+    public string AccountNumber { get; set; } = "";
+    public string? Gateway { get; set; }
+    public string? ReferenceCode { get; set; }
+    public decimal Amount { get; set; }
+    public string Status { get; set; } = "UNMATCHED";
+    public DateTime CreatedAt { get; set; }
 }
 
 public sealed class Notification

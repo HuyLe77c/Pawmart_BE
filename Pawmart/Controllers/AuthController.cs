@@ -28,6 +28,13 @@ public sealed class AuthController(AuthService authService) : ControllerBase
     public async Task<ActionResult<AuthResult>> Login(LoginRequest request, CancellationToken cancellationToken) =>
         Ok(await authService.LoginAsync(request, cancellationToken));
 
+    [AllowAnonymous]
+    [HttpPost("google")]
+    [ProducesResponseType<AuthResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResult>> Google(GoogleLoginRequest request, CancellationToken cancellationToken) =>
+        Ok(await authService.GoogleLoginAsync(request, cancellationToken));
+
     [Authorize]
     [HttpGet("me")]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]

@@ -49,6 +49,7 @@ public sealed class OrderService(PawmartDbContext db)
         var existingPayment = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId, ct);
         if (existingPayment?.PaymentStatus == "SUCCESS" && order.PaymentMethod != "COD")
             throw new ApiException(409, "A successful online payment requires a refund workflow before cancellation.", "Refund required");
+        await EnsureNoReceivedQrPaymentAsync(order, ct);
 
         await RestoreStockAsync(orderId, ct);
         await RestorePromotionUsageAsync(order.PromotionId, ct);
@@ -91,6 +92,7 @@ public sealed class OrderService(PawmartDbContext db)
             var existingPayment = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId, ct);
             if (existingPayment?.PaymentStatus == "SUCCESS" && order.PaymentMethod != "COD")
                 throw new ApiException(409, "A successful online payment requires a refund workflow before cancellation.", "Refund required");
+            await EnsureNoReceivedQrPaymentAsync(order, ct);
             await RestoreStockAsync(orderId, ct);
             await RestorePromotionUsageAsync(order.PromotionId, ct);
             order.CancelledAt = now;
@@ -107,6 +109,15 @@ public sealed class OrderService(PawmartDbContext db)
         order.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+    }
+
+    private async Task EnsureNoReceivedQrPaymentAsync(Order order, CancellationToken ct)
+    {
+        if (order.PaymentMethod == "BANK_QR" && await db.BankQrWebhookEvents.AnyAsync(
+            x => x.OrderId == order.OrderId && (x.Status == "PARTIAL" || x.Status == "APPLIED"), ct))
+            throw new ApiException(409,
+                "A bank transfer has already been received. Contact the store to arrange a refund before cancellation.",
+                "Refund required");
     }
 
     private async Task RestoreStockAsync(string orderId, CancellationToken ct)

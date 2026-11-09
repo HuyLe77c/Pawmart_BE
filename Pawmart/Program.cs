@@ -64,6 +64,7 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<AdminReportService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<BankQrService>();
+builder.Services.AddScoped<SePayWebhookService>();
 builder.Services.AddScoped<RecommendationService>();
 builder.Services.AddScoped<ChatMessageService>();
 builder.Services.AddHttpClient<OmnirouteClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
