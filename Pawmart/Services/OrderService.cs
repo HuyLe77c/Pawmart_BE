@@ -43,7 +43,7 @@ public sealed class OrderService(PawmartDbContext db)
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var order = await db.Orders.SingleOrDefaultAsync(x => x.UserId == userId && x.OrderId == orderId, ct)
             ?? throw new ApiException(404, "Order was not found.", "Not found");
-        if (order.OrderStatus is not ("PENDING" or "CONFIRMED"))
+        if (order.OrderStatus != "PENDING")
             throw new ApiException(409, "This order can no longer be cancelled.", "Invalid order state");
 
         var existingPayment = await db.Payments.SingleOrDefaultAsync(x => x.OrderId == orderId, ct);
@@ -74,7 +74,7 @@ public sealed class OrderService(PawmartDbContext db)
         var allowed = order.OrderStatus switch
         {
             "PENDING" => targetStatus is "CONFIRMED" or "CANCELLED",
-            "CONFIRMED" => targetStatus is "SHIPPING" or "CANCELLED",
+            "CONFIRMED" => targetStatus == "SHIPPING",
             "SHIPPING" => targetStatus == "DELIVERED",
             _ => false
         };

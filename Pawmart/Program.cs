@@ -20,6 +20,12 @@ Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "www
 Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads", "pets"));
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options => options.AddPolicy("LocalFlutterWeb", policy => policy
+    .SetIsOriginAllowed(origin => Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && uri.IsLoopback
+        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 21L * 1024 * 1024);
 builder.Services.AddProblemDetails();
 builder.Services.AddDbContext<PawmartDbContext>(options =>
@@ -161,6 +167,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "Pawmart API v1"));
 }
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("LocalFlutterWeb");
+}
 app.UseStaticFiles();
 if (!app.Environment.IsDevelopment())
 {

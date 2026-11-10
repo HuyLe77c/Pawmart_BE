@@ -23,6 +23,6 @@ Các bảng/cột của những migration còn lại đã có trong file tạo d
 
 Để bật đăng nhập Google trên database cũ, chạy `migrations/2026-11-08_GoogleSignIn.sql` sau khi sao lưu; xem `docs/google-sign-in.md` để thiết lập OAuth.
 
-Để thêm giới tính vào hồ sơ thú cưng trên database cũ, chạy `migrations/2026-11-09_PetGender.sql`; các hồ sơ hiện có sẽ được giữ lại và nhận giá trị `UNKNOWN`.
+Để thêm hoặc sửa cột giới tính trên database cũ, chạy `migrations/2026-11-09_PetGender.sql`; script có thể chạy lại, đổi các giá trị `NULL` thành `UNKNOWN` và đặt cột thành `NOT NULL`.
 
 Các file Python trong `catalog/` chỉ dùng khi cần tạo lại SQL catalog từ dữ liệu nguồn. Chúng ghi kết quả vào `migrations/`; không cần chạy chúng để khởi động BE hoặc dùng app.

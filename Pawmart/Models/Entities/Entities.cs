@@ -23,7 +23,7 @@ public sealed class Pet
     public string UserId { get; set; } = "";
     public string PetName { get; set; } = "";
     public string PetType { get; set; } = "DOG";
-    public string Gender { get; set; } = "UNKNOWN";
+    public string? Gender { get; set; } = "UNKNOWN";
     public string? Breed { get; set; }
     public int? AgeMonths { get; set; }
     public decimal? WeightKg { get; set; }

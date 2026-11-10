@@ -50,7 +50,7 @@ public sealed class PetImageStorageService(PawmartDbContext db, IWebHostEnvironm
         }
 
         if (!string.IsNullOrWhiteSpace(previousImageUrl)) DeleteManagedFile(previousImageUrl);
-        return new PetResponse(pet.PetId, pet.PetName, pet.PetType, pet.Gender, pet.Breed, pet.AgeMonths,
+        return new PetResponse(pet.PetId, pet.PetName, pet.PetType, pet.Gender ?? "UNKNOWN", pet.Breed, pet.AgeMonths,
             pet.WeightKg, pet.SpecialNotes, pet.ImageUrl, pet.BodySize, pet.ActivityLevel,
             pet.BodyConditionScore, pet.FeedingHabits, pet.FoodPreferences);
     }

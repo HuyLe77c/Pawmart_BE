@@ -61,7 +61,7 @@ public sealed class RecommendationService(PawmartDbContext db, IAiRecommendation
         var usedFallback = false;
         try
         {
-            response = await ai.RecommendAsync(new AiRecommendationRequest(pet.PetType, pet.Gender, pet.Breed, pet.AgeMonths,
+            response = await ai.RecommendAsync(new AiRecommendationRequest(pet.PetType, pet.Gender ?? "UNKNOWN", pet.Breed, pet.AgeMonths,
                 pet.WeightKg, pet.SpecialNotes, pet.BodySize, pet.ActivityLevel, pet.BodyConditionScore,
                 pet.FeedingHabits, pet.FoodPreferences, candidates), ct);
         }

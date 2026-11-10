@@ -117,7 +117,7 @@ public sealed class ChatMessageService(PawmartDbContext db, OmnirouteClient ai, 
         {
             context["myPets"] = await db.Pets.AsNoTracking().Where(x => x.UserId == userId)
                 .OrderBy(x => x.PetId).Take(20)
-                .Select(x => new { x.PetName, x.PetType, x.Gender, x.Breed, x.AgeMonths, x.WeightKg, x.BodySize,
+                .Select(x => new { x.PetName, x.PetType, Gender = x.Gender ?? "UNKNOWN", x.Breed, x.AgeMonths, x.WeightKg, x.BodySize,
                     x.ActivityLevel, x.BodyConditionScore, x.FeedingHabits, x.FoodPreferences, x.SpecialNotes })
                 .ToListAsync(ct);
         }
