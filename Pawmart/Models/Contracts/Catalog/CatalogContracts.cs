@@ -83,6 +83,7 @@ public sealed class PetWriteRequest
 {
     [Required, StringLength(50, MinimumLength = 1)] public string PetName { get; init; } = "";
     [Required, RegularExpression("^(DOG|CAT|OTHER)$")] public string PetType { get; init; } = "DOG";
+    [RegularExpression("^(MALE|FEMALE)$")] public string? Gender { get; init; }
     [StringLength(100)] public string? Breed { get; init; }
     [Range(0, 600)] public int? AgeMonths { get; init; }
     [Range(typeof(decimal), "0.01", "999.99")] public decimal? WeightKg { get; init; }
@@ -95,6 +96,6 @@ public sealed class PetWriteRequest
     [StringLength(1000), Url] public string? ImageUrl { get; init; }
 }
 
-public sealed record PetResponse(int PetId, string PetName, string PetType, string? Breed, int? AgeMonths, decimal? WeightKg,
+public sealed record PetResponse(int PetId, string PetName, string PetType, string? Gender, string? Breed, int? AgeMonths, decimal? WeightKg,
     string? SpecialNotes, string? ImageUrl, string? BodySize, string? ActivityLevel, int? BodyConditionScore,
     string? FeedingHabits, string? FoodPreferences);

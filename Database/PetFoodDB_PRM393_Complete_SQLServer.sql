@@ -132,6 +132,7 @@ CREATE TABLE dbo.Pets
     user_id         VARCHAR(50)      NOT NULL,
     pet_name        NVARCHAR(50)     NOT NULL,
     pet_type        VARCHAR(20)      NOT NULL,
+    gender          VARCHAR(10)      NULL,
     breed           NVARCHAR(100)    NULL,
     age_months      INT              NULL,
     weight_kg       DECIMAL(5,2)     NULL,
@@ -151,6 +152,7 @@ CREATE TABLE dbo.Pets
         REFERENCES dbo.Users(user_id)
         ON DELETE CASCADE,
     CONSTRAINT CK_Pets_Type CHECK (pet_type IN ('DOG', 'CAT', 'OTHER')),
+    CONSTRAINT CK_Pets_Gender CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE')),
     CONSTRAINT CK_Pets_Age CHECK (age_months IS NULL OR age_months BETWEEN 0 AND 600),
     CONSTRAINT CK_Pets_Weight CHECK (weight_kg IS NULL OR weight_kg > 0),
     CONSTRAINT CK_Pets_BodySize CHECK (body_size IS NULL OR body_size IN ('SMALL', 'MEDIUM', 'LARGE')),
@@ -694,6 +696,22 @@ CREATE TABLE dbo.OrderReviews
 );
 GO
 CREATE INDEX IX_OrderReviews_VisibleCreated ON dbo.OrderReviews(is_visible, created_at DESC);
+GO
+
+CREATE TABLE dbo.ChatMessages
+(
+    chat_message_id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ChatMessages PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    role VARCHAR(10) NOT NULL,
+    content NVARCHAR(MAX) NOT NULL,
+    request_content NVARCHAR(2000) NULL,
+    products_json NVARCHAR(4000) NULL,
+    created_at DATETIME2(0) NOT NULL CONSTRAINT DF_ChatMessages_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    CONSTRAINT FK_ChatMessages_Users FOREIGN KEY (user_id) REFERENCES dbo.Users(user_id) ON DELETE CASCADE,
+    CONSTRAINT CK_ChatMessages_Role CHECK (role IN ('user', 'assistant'))
+);
+GO
+CREATE INDEX IX_ChatMessages_User_Message ON dbo.ChatMessages(user_id, chat_message_id);
 GO
 
 /* ================================================================

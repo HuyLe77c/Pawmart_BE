@@ -12,8 +12,10 @@ public sealed class ChatMessageRequest
 {
     [Required, StringLength(2000, MinimumLength = 1)]
     public string Message { get; init; } = "";
-    public List<ChatTurn> History { get; init; } = [];
+    public string? DisplayMessage { get; init; }
 }
+
+public sealed record ChatHistoryItem(string Role, string Content, IReadOnlyList<ChatProductLink> Products);
 
 public sealed record ChatProductLink(int ProductId, string ProductName, decimal Price);
 

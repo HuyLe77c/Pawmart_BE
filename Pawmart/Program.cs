@@ -20,6 +20,16 @@ Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "www
 Directory.CreateDirectory(Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "uploads", "pets"));
 
 builder.Services.AddControllers();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options => options.AddPolicy("LocalFlutterWeb", policy => policy
+        .SetIsOriginAllowed(origin =>
+            Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            && uri.IsLoopback)
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+}
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 21L * 1024 * 1024);
 builder.Services.AddProblemDetails();
 builder.Services.AddDbContext<PawmartDbContext>(options =>
@@ -162,6 +172,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("LocalFlutterWeb");
+}
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();

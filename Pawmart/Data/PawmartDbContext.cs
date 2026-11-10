@@ -7,6 +7,7 @@ namespace Pawmart.Data;
 public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<Pet> Pets => Set<Pet>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
@@ -30,6 +31,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
 
         MapSnakeCaseColumns(modelBuilder);
         ConfigureUsers(modelBuilder);
+        ConfigureChatMessages(modelBuilder);
         ConfigurePets(modelBuilder);
         ConfigureCategories(modelBuilder);
         ConfigureProducts(modelBuilder);
@@ -78,6 +80,21 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.HasIndex(x => new { x.Role, x.IsActive });
     }
 
+    private static void ConfigureChatMessages(ModelBuilder modelBuilder)
+    {
+        var e = modelBuilder.Entity<ChatMessage>();
+        e.ToTable("ChatMessages");
+        e.HasKey(x => x.ChatMessageId);
+        e.Property(x => x.UserId).HasMaxLength(50).IsUnicode(false).IsRequired();
+        e.Property(x => x.Role).HasMaxLength(10).IsUnicode(false).IsRequired();
+        e.Property(x => x.Content).IsRequired();
+        e.Property(x => x.RequestContent).HasMaxLength(2000);
+        e.Property(x => x.ProductsJson).HasMaxLength(4000);
+        e.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        e.HasIndex(x => new { x.UserId, x.ChatMessageId });
+    }
+
     private static void ConfigurePets(ModelBuilder modelBuilder)
     {
         var e = modelBuilder.Entity<Pet>();
@@ -85,6 +102,7 @@ public sealed class PawmartDbContext(DbContextOptions<PawmartDbContext> options)
         e.HasKey(x => x.PetId);
         e.Property(x => x.PetName).HasMaxLength(50).IsRequired();
         e.Property(x => x.PetType).HasMaxLength(20).IsUnicode(false).IsRequired();
+        e.Property(x => x.Gender).HasMaxLength(10).IsUnicode(false);
         e.Property(x => x.Breed).HasMaxLength(100);
         e.Property(x => x.WeightKg).HasPrecision(5, 2);
         e.Property(x => x.BodySize).HasMaxLength(10).IsUnicode(false);

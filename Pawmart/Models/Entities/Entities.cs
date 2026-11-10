@@ -17,12 +17,24 @@ public sealed class User
     public DateTime? LastLoginAt { get; set; }
 }
 
+public sealed class ChatMessage
+{
+    public long ChatMessageId { get; set; }
+    public string UserId { get; set; } = "";
+    public string Role { get; set; } = "";
+    public string Content { get; set; } = "";
+    public string? RequestContent { get; set; }
+    public string? ProductsJson { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 public sealed class Pet
 {
     public int PetId { get; set; }
     public string UserId { get; set; } = "";
     public string PetName { get; set; } = "";
     public string PetType { get; set; } = "DOG";
+    public string? Gender { get; set; }
     public string? Breed { get; set; }
     public int? AgeMonths { get; set; }
     public decimal? WeightKg { get; set; }
